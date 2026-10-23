@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}{{ t('login') if mode == 'login' else t('register') }} — {{ settings.site_name }}{% endblock %}
+{% block scripts %}
+{% if sms_login and mode == 'login' %}
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const H = { 'Content-Type': 'application/json', 'X-CSRF-Token': window.__CSRF };
+  const fa = window.__LANG === 'fa';
+  document.querySelectorAll('.auth-tab').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('.auth-tab').forEach(x => x.classList.toggle('on', x === b));
+    document.querySelectorAll('.auth-pane').forEach(p => p.hidden = p.id !== b.dataset.pane);
+  }));
+  let timer = null;
+  function countdown(sec) {
+    const r = $('smsResend'); r.disabled = true; clearInterval(timer);
+    timer = setInterval(() => { sec--; $('smsTimer').textContent = sec > 0 ? sec + 's' : ''; if (sec <= 0) { clearInterval(timer); r.disabled = false; } }, 1000);
+  }
+  async function send() {
+    const btn = $('smsSend'); btn.disabled = true;
+    try {
+      const j = await (await fetch('/auth/sms/send', { method: 'POST', headers: H, body: JSON.stringify({ phone: $('smsPhone').value }) })).json();
+      if (!j.ok) { BB.toast(j.message || 'error', 'err'); return; }
+      $('smsStep1').hidden = true; $('smsStep2').hidden = false;
+      $('smsSentTo').textContent = (fa ? 'کد به ' : 'Code sent to ') + (j.phone || $('smsPhone').value) + (fa ? ' ارسال شد.' : '');
+      $('smsCode').focus(); countdown(60);
+    } finally { btn.disabled = false; }
+  }
+  async function verify() {
+    const j = await (await fetch('/auth/sms/verify', { method: 'POST', headers: H,
+      body: JSON.stringify({ phone: $('smsPhone').value, code: $('smsCode').value, next: {{ (next or '/chat')|tojson }} }) })).json();
+    if (j.ok) location.href = j.next || '/chat'; else BB.toast(j.message || 'error', 'err');
+  }
+  $('smsSend').onclick = send; $('smsResend').onclick = send; $('smsVerify').onclick = verify;
+  $('smsBack').onclick = e => { e.preventDefault(); $('smsStep2').hidden = true; $('smsStep1').hidden = false; };
+  $('smsPhone').addEventListener('keydown', e => { if (e.key === 'Enter') send(); });
+  $('smsCode').addEventListener('input', e => { if (e.target.value.replace(/\D/g, '').length === 6) verify(); });
+})();
+</script>
+{% endif %}
+{% endblock %}
+{% block body %}
+<div class="wrap-narrow">
+  <div class="card auth-card">
+    <div class="auth-head">
+      <a class="brand" href="/">
+        {% if settings.logo_version %}
+          <img src="/static/uploads/logo.png?v={{ settings.logo_version }}" alt="{{ settings.site_name }}">
+        {% else %}
+          <span class="brand-mark">{{ settings.site_name[0]|upper }}</span>
+        {% endif %}
+        <span>{{ settings.site_name }}<small>{{ settings['site_tagline_' + lang] or t('brand_sub') }}</small></span>
+      </a>
+      <h1>{{ t('login') if mode == 'login' else t('register') }}</h1>
+      <p class="muted small" style="margin:0">
+        {{ 'به کارگاه هوش مصنوعی خودت خوش آمدی.' if lang == 'fa' and mode == 'login' else '' }}
+        {{ 'یک حساب بساز و شروع کن.' if lang == 'fa' and mode == 'register' else '' }}
+        {{ 'Welcome back to your AI workshop.' if lang == 'en' and mode == 'login' else '' }}
+        {{ 'Create an account to get started.' if lang == 'en' and mode == 'register' else '' }}
+      </p>
+    </div>
+    {% if error %}<div class="alert">{{ error }}</div>{% endif %}
+    {% if ok %}<div class="alert ok">{{ ok }}</div>{% endif %}
+    {% if sms_login and mode == 'login' %}
+    <div class="auth-tabs" role="tablist">
+      <button type="button" class="auth-tab on" data-pane="smsPane">📱 {{ 'ورود با پیامک' if lang == 'fa' else 'SMS code' }}</button>
+      <button type="button" class="auth-tab" data-pane="pwPane">🔑 {{ 'رمز عبور' if lang == 'fa' else 'Password' }}</button>
+    </div>
+    <div id="smsPane" class="auth-pane">
+      <div id="smsStep1">
+        <label class="field"><span class="label">{{ 'شماره موبایل' if lang == 'fa' else 'Mobile number' }}</span>
+          <input class="input" id="smsPhone" inputmode="tel" dir="ltr" placeholder="09123456789" autocomplete="tel"></label>
+        <button class="btn btn-primary btn-block btn-lg" id="smsSend" type="button">{{ 'دریافت کد ورود' if lang == 'fa' else 'Send code' }}</button>
+      </div>
+      <div id="smsStep2" hidden>
+        <p class="small muted" id="smsSentTo"></p>
+        <label class="field"><span class="label">{{ 'کد ۶ رقمی' if lang == 'fa' else '6-digit code' }}</span>
+          <input class="input otp-input" id="smsCode" inputmode="numeric" dir="ltr" maxlength="6" autocomplete="one-time-code"></label>
+        <button class="btn btn-primary btn-block btn-lg" id="smsVerify" type="button">{{ t('login') }}</button>
+        <div class="row" style="justify-content:space-between;margin-top:10px;font-size:12.5px">
+          <a href="#" id="smsBack">{{ 'تغییر شماره' if lang == 'fa' else 'Change number' }}</a>
+          <span><button class="link" type="button" id="smsResend" disabled>{{ 'ارسال مجدد' if lang == 'fa' else 'Resend' }}</button> <span id="smsTimer" class="mono dim"></span></span>
+        </div>
+      </div>
+      <div class="tiny dim" style="margin-top:10px">{{ 'اگر حساب نداشته باشی، با همین شماره خودکار ساخته می‌شود.' if lang == 'fa' else 'No account? One is created for this number automatically.' }}</div>
+    </div>
+    {% endif %}
+    {% if mode == 'login' %}
+    <form method="post" action="/login" id="pwPane" class="auth-pane" {{ 'hidden' if sms_login }}>
+      <input type="hidden" name="next" value="{{ next|default('/chat') }}">
+      <label class="field"><span class="label">{{ t('username') }}{{ ' یا موبایل' if lang == 'fa' else ' or mobile' }}</span>
+        <input class="input" name="username" autocomplete="username" required {{ '' if sms_login else 'autofocus' }}></label>
+      <label class="field"><span class="label">{{ t('password') }}</span>
+        <input class="input" type="password" name="password" autocomplete="current-password" required></label>
+      <button class="btn btn-primary btn-block btn-lg" type="submit">{{ t('login') }}</button>
+    </form>
+    <div class="auth-switch">
+      {{ 'حساب نداری؟' if lang == 'fa' else "No account?" }}
+      <a href="/register">{{ t('register') }}</a>
+    </div>
+    {% else %}
+    {% if sms_login %}<a class="btn btn-block" href="/login" style="margin-bottom:14px">📱 {{ 'ثبت‌نام سریع با شماره موبایل' if lang == 'fa' else 'Quick sign-up with mobile' }}</a>{% endif %}
+    <form method="post" action="/register">
+      <label class="field"><span class="label">{{ t('username') }}</span>
+        <input class="input" name="username" autocomplete="username" required autofocus
+               pattern="[A-Za-z0-9._\-]{3,32}" title="3-32 letters, digits, . _ -"></label>
+      <label class="field"><span class="label">{{ t('password') }}</span>
+        <input class="input" type="password" name="password" minlength="8" autocomplete="new-password" required></label>
+      <label class="field"><span class="label">{{ t('password2') }}</span>
+        <input class="input" type="password" name="password2" minlength="8" autocomplete="new-password" required></label>
+      <button class="btn btn-primary btn-block btn-lg" type="submit">{{ t('register') }}</button>
+    </form>
+    <div class="auth-switch">
+      {{ 'قبلاً ثبت‌نام کردی؟' if lang == 'fa' else 'Already registered?' }}
+      <a href="/login">{{ t('login') }}</a>
+    </div>
+    {% endif %}
+    <div class="pay-strip" style="margin-top:20px">
+      <span>🔒 {{ t('pay_secure') }}</span>
+      <span>✦ {{ '۲ پلن ماهانه' if lang == 'fa' else '2 monthly plans' }}</span>
+    </div>
+  </div>
+</div>
+{% endblock %}

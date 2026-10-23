@@ -1,0 +1,367 @@
+{% extends "base.html" %}
+{% block title %}{{ t('account') }} — {{ settings.site_name }}{% endblock %}
+{% block body %}
+<div class="wrap" style="max-width:1000px">
+  <div class="section-head">
+    <div><h2>{{ t('account') }}</h2><p class="small">{{ t('welcome_note') }}</p></div>
+    <div class="spacer"></div>
+    <a href="/pricing" class="btn btn-primary btn-sm">✦ {{ t('plans') }}</a>
+  </div>
+  {% if page_error or error %}<div class="alert">{{ page_error or error }}</div>{% endif %}
+  {% if page_ok %}<div class="alert ok">{{ page_ok }}</div>{% endif %}
+  {% if request.query_params.get('payment') %}
+    <div class="alert ok">{{ 'وضعیت پرداخت: ' if lang == 'fa' else 'Payment status: ' }}{{ request.query_params.get('payment') }}</div>
+  {% endif %}
+
+  <div class="grid g3" style="margin-bottom:18px">
+    <div class="stat">
+      <div class="k">{{ t('current_plan') }}</div>
+      <div class="v purple" style="font-size:18px">
+        {% if sub %}{{ (sub['name_fa'] or t('current_plan')) if lang == 'fa' else (sub['name_en'] or t('current_plan')) }}{% else %}—{% endif %}
+      </div>
+    </div>
+    <div class="stat">
+      <div class="k">{{ t('days_left') }}</div>
+      <div class="v">{{ sub_days }}</div>
+    </div>
+    <div class="stat">
+      <div class="k">{{ t('usage') }}</div>
+      <div class="v" style="font-size:19px">${{ '%.3f'|format(user.used_usd or 0) }}</div>
+    </div>
+  </div>
+
+  <div class="grid g2" style="align-items:start">
+    <div class="card wallet-card">
+      <div class="row" style="align-items:flex-start">
+        <div>
+          <div class="k muted small">{{ 'کیف پول' if lang == 'fa' else 'Wallet balance' }}</div>
+          <div class="v" style="font-size:30px;line-height:1.3">{{ (wallet.balance_toman or 0)|money }} <span class="tiny dim">{{ t('toman') }}</span></div>
+        </div>
+        <div class="spacer"></div>
+        <span class="badge {{ 'ok' if (wallet.balance_toman or 0) > 0 else '' }}">{{ 'فعال' if (wallet.balance_toman or 0) > 0 else 'خالی' }}</span>
+      </div>
+      <p class="muted small" style="margin:10px 0 14px">
+        {{ 'بدون پلن هم می‌توانید با شارژ کیف پول از تمام ابزارها استفاده کنید.' if lang == 'fa' else 'Even without a plan, top up your wallet to use every tool.' }}
+      </p>
+      <form method="post" action="/wallet/topup">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <div class="row" style="gap:8px">
+          <input class="input" type="number" name="amount" min="1000" max="400000000" step="1000"
+                 value="100000" style="flex:1">
+          <button class="btn btn-primary" type="submit">{{ 'شارژ کیف پول' if lang == 'fa' else 'Top up' }}</button>
+        </div>
+        <div class="row" style="gap:6px;margin-top:8px">
+          {% for amt in [50000, 100000, 300000] %}
+            <button type="button" class="chip small" data-amt="{{ amt }}">{{ amt|money }}</button>
+          {% endfor %}
+        </div>
+      </form>
+      {% if wtx %}
+        <hr>
+        <div class="small muted" style="margin-bottom:8px">{{ 'تراکنش‌های کیف پول' if lang == 'fa' else 'Wallet transactions' }}</div>
+        <div class="table-wrap" style="max-height:220px;overflow:auto">
+          <table class="data">
+            <tbody>
+            {% for tx in wtx %}
+              <tr>
+                <td class="dim tiny nowrap">{{ tx['created_at']|ts }}</td>
+                <td class="small">{{ tx['description'] or tx['type'] }}</td>
+                <td class="nowrap {% if (tx['amount_toman'] or 0) < 0 %}accent{% else %}purple{% endif %}">
+                  {{ '+' if (tx['amount_toman'] or 0) > 0 }}{{ (tx['amount_toman'] or 0)|money }}
+                </td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <h3 style="font-size:16px;margin-bottom:12px">{{ 'سهمیه‌های من' if lang == 'fa' else 'My quotas' }}</h3>
+      {% for key, label in [('chat', 'پیام' if lang == 'fa' else 'Messages'),
+                            ('image', 'تصویر' if lang == 'fa' else 'Images'),
+                            ('tools', 'ابزار' if lang == 'fa' else 'Tools')] %}
+        {% set q = quotas[key] %}
+        {% set pct = ((q.used / q.total) * 100) if q.total else 0 %}
+        <div class="quota-row">
+          <div class="qhead">
+            <span>{{ label }}</span>
+            {% if q.total %}
+              <b class="mono">{{ q.remaining }} / {{ q.total }}</b>
+            {% else %}
+              <span class="dim tiny">{{ 'بدون سهمیه' if lang == 'fa' else 'No quota' }}</span>
+            {% endif %}
+          </div>
+          <div class="quota-bar {{ 'full' if pct >= 100 }}">
+            <i style="width:{{ [pct, 100]|min }}%"></i>
+          </div>
+        </div>
+      {% endfor %}
+      {% if sub %}
+        <form method="post" action="/billing/refill" style="margin-top:14px">
+          <input type="hidden" name="csrf" value="{{ csrf }}">
+          <input type="hidden" name="plan_id" value="{{ sub['plan_id'] }}">
+          <button class="btn btn-primary btn-block" type="submit">
+            ⟳ {{ 'خرید سهمیه اضافه (۶۰٪ قیمت)' if lang == 'fa' else 'Buy quota refill (60% of plan price)' }}
+          </button>
+        </form>
+      {% endif %}
+      <p class="tiny dim" style="margin-top:10px">
+        {{ 'سهمیه‌ها هر دوره ۳۰ روزه تمدید می‌شوند.' if lang == 'fa' else 'Quotas renew with each 30-day period.' }}
+      </p>
+    </div>
+  </div>
+
+  {% if saved %}<div class="alert ok">{{ 'ذخیره شد ✓' if lang == 'fa' else 'Saved ✓' }}</div>{% endif %}
+
+  {# ------------------------------ profile ------------------------------ #}
+  <div class="card acc-profile" id="profile" style="--acc:{{ profile.accent }}">
+    <div class="row" style="align-items:flex-start;gap:18px">
+      <div class="acc-avatar-wrap">
+        <div class="pf-avatar">{% if avatar_url(user) %}<img src="{{ avatar_url(user) }}" alt="">{% else %}{{ (user.display_name or user.username)[0]|upper }}{% endif %}</div>
+        <form method="post" action="/account/avatar" enctype="multipart/form-data" class="acc-avatar-form">
+          <input type="hidden" name="csrf" value="{{ csrf }}">
+          <label class="btn btn-sm btn-block">📷 {{ 'تصویر جدید' if lang == 'fa' else 'New photo' }}
+            <input type="file" name="avatar" accept="image/*" hidden onchange="this.form.submit()"></label>
+          {% if avatar_url(user) %}<button class="btn btn-sm btn-ghost btn-block" name="action" value="remove">{{ 'حذف تصویر' if lang == 'fa' else 'Remove' }}</button>{% endif %}
+        </form>
+      </div>
+      <div style="flex:1;min-width:0">
+        <div class="row">
+          <div>
+            <h3 style="margin:0">{{ user.display_name or user.username }}</h3>
+            <div class="muted small">@{{ user.username }} · {{ t('created') }}: {{ user.created_at|jalali }}</div>
+          </div>
+          <span class="spacer"></span>
+          {% if sub %}<div class="badge ok">{{ t('sub_active') }} · {{ t('active_until') }} {{ sub['ends_at']|jalali }}</div>
+          {% else %}<div class="badge err">{{ t('no_plan') }}</div>{% endif %}
+          <a class="btn btn-sm" href="/u/{{ user.username }}" target="_blank">◉ {{ 'صفحه پروفایل من' if lang == 'fa' else 'My profile page' }} ↗</a>
+        </div>
+        <div class="acc-mini-stats">
+          <span><b>{{ stats.conversations }}</b> {{ 'گفتگو' if lang == 'fa' else 'chats' }}</span>
+          <span><b>{{ stats.messages }}</b> {{ 'پیام' if lang == 'fa' else 'messages' }}</span>
+          <span><b>{{ stats.images }}</b> {{ 'تصویر' if lang == 'fa' else 'images' }}</span>
+          <span><b>{{ spend.n }}</b> {{ 'درخواست' if lang == 'fa' else 'requests' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <details class="acc-edit" {{ 'open' if saved in ('profile', 'avatar') }}>
+      <summary>✎ {{ 'ویرایش و شخصی‌سازی پروفایل' if lang == 'fa' else 'Edit & customise profile' }}</summary>
+      <form method="post" action="/account/profile">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <div class="grid g2">
+          <label class="field"><span class="label">{{ 'نام نمایشی' if lang == 'fa' else 'Display name' }}</span><input class="input" name="display_name" value="{{ user.display_name or '' }}" maxlength="60"></label>
+          <label class="field"><span class="label">{{ 'عنوان کوتاه' if lang == 'fa' else 'Headline' }}</span><input class="input" name="headline" value="{{ profile.headline }}" maxlength="120" placeholder="{{ 'طراح، برنامه‌نویس، تولیدکننده محتوا…' if lang == 'fa' else 'Designer, developer…' }}"></label>
+        </div>
+        <label class="field"><span class="label">{{ 'درباره من' if lang == 'fa' else 'Bio' }}</span><textarea class="input" name="bio" rows="3" maxlength="500">{{ user.bio or '' }}</textarea></label>
+        <div class="grid g3">
+          <label class="field"><span class="label">{{ 'شهر / مکان' if lang == 'fa' else 'Location' }}</span><input class="input" name="location" value="{{ profile.location }}"></label>
+          <label class="field"><span class="label">{{ 'وب‌سایت' if lang == 'fa' else 'Website' }}</span><input class="input" name="website" value="{{ profile.website }}" dir="ltr"></label>
+          <label class="field"><span class="label">GitHub</span><input class="input" name="github" value="{{ profile.github }}" dir="ltr" placeholder="username"></label>
+          <label class="field"><span class="label">{{ 'تلگرام' if lang == 'fa' else 'Telegram' }}</span><input class="input" name="telegram" value="{{ profile.telegram }}" dir="ltr" placeholder="@username"></label>
+          <label class="field"><span class="label">{{ 'اینستاگرام' if lang == 'fa' else 'Instagram' }}</span><input class="input" name="instagram" value="{{ profile.instagram }}" dir="ltr" placeholder="@username"></label>
+          <label class="field"><span class="label">{{ 'رنگ اصلی' if lang == 'fa' else 'Accent colour' }}</span><input class="input" type="color" name="accent" value="{{ profile.accent }}" style="height:42px;padding:4px"></label>
+        </div>
+        <div class="field"><span class="label">{{ 'طرح بنر' if lang == 'fa' else 'Banner style' }}</span>
+          <div class="banner-pick">
+            {% for b, l in [('aurora','Aurora'),('matrix','Matrix'),('neon','Neon'),('sunset','Sunset'),('ocean','Ocean'),('mono','Mono')] %}
+              <label><input type="radio" name="banner" value="{{ b }}" {{ 'checked' if profile.banner == b }}><span class="banner-{{ b }}">{{ l }}</span></label>
+            {% endfor %}
+          </div></div>
+        <div class="field"><span class="label">{{ 'حریم خصوصی' if lang == 'fa' else 'Privacy' }}</span>
+          <div class="row" style="gap:4px 18px">
+            <label class="check"><input type="checkbox" name="public" value="1" {{ 'checked' if profile.public }}> {{ 'پروفایل عمومی باشد' if lang == 'fa' else 'Public profile' }}</label>
+            <label class="check"><input type="checkbox" name="show_activity" value="1" {{ 'checked' if profile.show_activity }}> {{ 'نمایش نمودار فعالیت' if lang == 'fa' else 'Show activity graph' }}</label>
+            <label class="check"><input type="checkbox" name="show_stats" value="1" {{ 'checked' if profile.show_stats }}> {{ 'نمایش آمار' if lang == 'fa' else 'Show stats' }}</label>
+            <label class="check"><input type="checkbox" name="show_tools" value="1" {{ 'checked' if profile.show_tools }}> {{ 'نمایش ابزارهای پرکاربرد' if lang == 'fa' else 'Show top tools' }}</label>
+          </div></div>
+        <button class="btn btn-primary" type="submit">{{ t('save') }}</button>
+      </form>
+    </details>
+  </div>
+
+  {# ---------------------------- connections ---------------------------- #}
+  <div class="grid g3" style="align-items:start">
+    <div class="card conn-card" id="phone">
+      <h3 style="font-size:15px">📱 {{ 'شماره موبایل' if lang == 'fa' else 'Mobile number' }}</h3>
+      {% if user.phone %}<div class="badge ok" style="margin-bottom:10px">{{ user.phone }}</div>{% endif %}
+      {% if sms_ready %}
+        <div class="row" style="gap:6px"><input class="input" id="phoneIn" placeholder="09…" dir="ltr" style="flex:1"><button class="btn btn-sm" id="phoneSend" type="button">{{ 'ارسال کد' if lang == 'fa' else 'Send code' }}</button></div>
+        <div class="row" style="gap:6px;margin-top:8px" id="phoneCodeRow" hidden><input class="input" id="phoneCode" placeholder="{{ 'کد ۶ رقمی' if lang == 'fa' else '6-digit code' }}" dir="ltr" style="flex:1" inputmode="numeric"><button class="btn btn-sm btn-primary" id="phoneVerify" type="button">{{ 'تأیید' if lang == 'fa' else 'Verify' }}</button></div>
+        <div class="tiny dim" id="phoneMsg" style="margin-top:6px">{{ 'برای ورود با پیامک و دریافت اطلاع‌رسانی‌ها.' if lang == 'fa' else 'For SMS login and notifications.' }}</div>
+      {% else %}<p class="tiny dim">{{ 'سامانه پیامک فعال نیست.' if lang == 'fa' else 'SMS is not enabled.' }}</p>{% endif %}
+    </div>
+
+    <div class="card conn-card" id="telegram">
+      <h3 style="font-size:15px">✈ {{ 'ربات تلگرام' if lang == 'fa' else 'Telegram bot' }}</h3>
+      {% if tg and tg.user_id %}<div class="badge ok" style="margin-bottom:10px">{{ 'متصل' if lang == 'fa' else 'Linked' }}{% if tg.username %} · @{{ tg.username }}{% endif %}</div>{% endif %}
+      {% if tg_bot %}
+        <p class="tiny dim">{{ 'همه خدمات بیلدباکس داخل تلگرام: چت، تصویر، ویس، خرید پلن.' if lang == 'fa' else 'All of BldBox inside Telegram.' }}</p>
+        <button class="btn btn-sm btn-primary" id="tgLink" type="button">{{ 'اتصال به حساب تلگرام' if lang == 'fa' else 'Link Telegram' }}</button>
+        <div class="tiny" id="tgOut" style="margin-top:8px"></div>
+        <a class="btn btn-sm btn-ghost" href="https://t.me/{{ tg_bot }}" target="_blank" rel="noopener" style="margin-top:6px">@{{ tg_bot }} ↗</a>
+      {% else %}<p class="tiny dim">{{ 'ربات تلگرام هنوز فعال نشده.' if lang == 'fa' else 'Telegram bot is not active.' }}</p>{% endif %}
+    </div>
+
+    <div class="card conn-card" id="github">
+      <h3 style="font-size:15px">⌥ GitHub</h3>
+      {% if gh %}
+        <div class="row" style="gap:8px;margin-bottom:10px">
+          {% if gh.avatar %}<img src="{{ gh.avatar }}" alt="" style="width:30px;height:30px;border-radius:50%">{% endif %}
+          <a href="https://github.com/{{ gh.login }}" target="_blank" rel="noopener"><b>@{{ gh.login }}</b></a>
+        </div>
+        <p class="tiny dim">{{ 'در چت بگو «فایل‌ها را در ریپو X پوش کن» یا از دکمه گیت‌هاب در چت استفاده کن.' if lang == 'fa' else 'Ask the AI to push files, or use the GitHub button in chat.' }}</p>
+        <div class="row" style="gap:6px"><button class="btn btn-sm" type="button" id="ghRepos">{{ 'مخازن من' if lang == 'fa' else 'My repos' }}</button>
+          <form method="post" action="/account/github/unlink"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn btn-sm btn-danger">{{ 'قطع اتصال' if lang == 'fa' else 'Disconnect' }}</button></form></div>
+        <div id="ghList" class="tiny" style="margin-top:8px;max-height:180px;overflow:auto"></div>
+      {% else %}
+        {% if gh_oauth %}<a class="btn btn-sm btn-primary btn-block" href="/account/github/connect">⌥ {{ 'اتصال با گیت‌هاب' if lang == 'fa' else 'Connect with GitHub' }}</a><div class="divider tiny dim" style="margin:8px 0;text-align:center">{{ 'یا' if lang == 'fa' else 'or' }}</div>{% endif %}
+        <form method="post" action="/account/github/token">
+          <input type="hidden" name="csrf" value="{{ csrf }}">
+          <input class="input" type="password" name="token" placeholder="github_pat_…" dir="ltr" required autocomplete="off">
+          <div class="tiny dim" style="margin:6px 0">{{ 'توکن Fine-grained با دسترسی Contents (Read & Write) و Metadata. رمزنگاری‌شده ذخیره می‌شود.' if lang == 'fa' else 'Fine-grained token with Contents (R/W) + Metadata. Stored encrypted.' }}</div>
+          <button class="btn btn-sm" type="submit">{{ 'ذخیره توکن' if lang == 'fa' else 'Save token' }}</button>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="row" style="margin-bottom:10px">
+      <h3 style="margin:0">{{ 'سابقه استفاده از ابزارها' if lang == 'fa' else 'Tool usage history' }}</h3>
+      <div class="spacer"></div>
+      <span class="badge">{{ logs|length }}</span>
+    </div>
+    {% if logs %}
+      {% for l in logs[:25] %}
+        <div class="log-row">
+          <div class="lhead">
+            <span class="tname mono">{{ l['tool_name'] }}</span>
+            <span class="badge {{ 'ok' if l['status'] == 'ok' else ('warn' if l['status'] == 'running' else 'err') }}">{{ l['status'] }}</span>
+            {% if l['source'] %}<span class="src">{{ l['source'] }}</span>{% endif %}
+            <span class="spacer"></span>
+            <span class="dim tiny">{{ l['created_at']|ts }}</span>
+            {% if l['duration_ms'] is not none %}<span class="dim tiny">· {{ l['duration_ms'] }}ms</span>{% endif %}
+          </div>
+          {% if l['command'] %}<div class="args">{{ l['command'] }}</div>{% endif %}
+        </div>
+      {% endfor %}
+    {% else %}
+      <p class="muted small" style="margin:0">{{ 'هنوز از ابزاری استفاده نکرده‌اید.' if lang == 'fa' else 'No tool usage yet.' }}</p>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <div class="row" style="margin-bottom:10px">
+      <h3 style="margin:0">{{ t('payment_history') }}</h3>
+      <div class="spacer"></div>
+      <a href="/pricing" class="btn btn-sm">{{ t('renew') }}</a>
+    </div>
+    {% if payments %}
+      <div class="table-wrap">
+        <table class="data">
+          <thead><tr>
+            <th>{{ t('invoice') }}</th><th>{{ t('plan') }}</th><th>{{ t('amount') }}</th>
+            <th>{{ 'نوع' if lang == 'fa' else 'Type' }}</th><th>{{ t('status') }}</th><th>{{ t('date') }}</th>
+          </tr></thead>
+          <tbody>
+          {% for p in payments %}
+            <tr>
+              <td class="mono tiny">{{ p['id'][:10] }}</td>
+              <td>{{ p['name_fa'] if lang == 'fa' else (p['name_en'] or '—') }}</td>
+              <td class="nowrap">{{ p['amount']|money }} {{ t('toman') }}</td>
+              <td><span class="badge">{{ p['type'] or 'plan' }}</span></td>
+              <td>
+                {% if p['status'] == 'paid' %}<span class="badge ok">{{ t('paid') }}</span>
+                {% elif p['status'] == 'pending' %}<span class="badge warn">{{ t('pending_pay') }}</span>
+                {% else %}<span class="badge err">{{ t('failed') }}</span>{% endif %}
+              </td>
+              <td class="dim tiny nowrap">{{ (p['paid_at'] or p['created_at'])|ts }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="muted small" style="margin:0">{{ 'هنوز پرداختی ثبت نشده است.' if lang == 'fa' else 'No payments yet.' }}</p>
+    {% endif %}
+  </div>
+
+  {% if subs and subs|length > 1 %}
+  <div class="card">
+    <h3>{{ 'سابقه اشتراک' if lang == 'fa' else 'Subscription history' }}</h3>
+    <div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>{{ t('plan') }}</th><th>{{ 'شروع' if lang == 'fa' else 'Starts' }}</th><th>{{ 'پایان' if lang == 'fa' else 'Ends' }}</th></tr></thead>
+        <tbody>
+        {% for s in subs %}
+          <tr>
+            <td>{{ (s['name_fa'] or ('دوره آزمایشی' if not s['plan_id'] else '—')) if lang == 'fa' else (s['name_en'] or ('Trial' if not s['plan_id'] else '—')) }}</td>
+            <td class="dim tiny">{{ s['starts_at']|ts }}</td>
+            <td class="tiny">{{ s['ends_at']|ts }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="card">
+    <h3>{{ t('change_password') }}</h3>
+    <form method="post" action="/account/password">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      {% if user.pw_set != 0 or user.role == 'admin' %}
+      <label class="field"><span class="label">{{ t('old_password') }}</span>
+        <input class="input" type="password" name="old" required autocomplete="current-password"></label>
+      {% else %}
+      <p class="small muted">{{ 'حساب تو با پیامک/تلگرام ساخته شده؛ می‌توانی برای ورود با نام کاربری یک رمز بگذاری.' if lang == 'fa' else 'Your account was created via SMS/Telegram; set a password to also sign in with your username.' }} <span class="mono">({{ user.username }})</span></p>
+      {% endif %}
+      <div class="grid g2">
+        <label class="field"><span class="label">{{ t('new_password') }}</span>
+          <input class="input" type="password" name="new" minlength="8" required autocomplete="new-password"></label>
+        <label class="field"><span class="label">{{ t('password2') }}</span>
+          <input class="input" type="password" name="new2" minlength="8" required autocomplete="new-password"></label>
+      </div>
+      <button class="btn btn-primary" type="submit">{{ t('save') }}</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  document.querySelectorAll('[data-amt]').forEach(b => b.addEventListener('click', () => {
+    const inp = b.closest('form').querySelector('input[name="amount"]');
+    if (inp) inp.value = b.dataset.amt;
+  }));
+  (function () {
+    const H = { 'Content-Type': 'application/json', 'X-CSRF-Token': window.__CSRF };
+    const post = async (u, b) => (await fetch(u, { method: 'POST', headers: H, body: JSON.stringify(b || {}) })).json();
+    const $ = id => document.getElementById(id);
+    if ($('phoneSend')) {
+      $('phoneSend').onclick = async () => {
+        const j = await post('/account/phone/send', { phone: $('phoneIn').value });
+        $('phoneMsg').textContent = j.message || ''; if (j.ok) $('phoneCodeRow').hidden = false;
+      };
+      $('phoneVerify').onclick = async () => {
+        const j = await post('/account/phone/verify', { phone: $('phoneIn').value, code: $('phoneCode').value });
+        $('phoneMsg').textContent = j.message || ''; if (j.ok) setTimeout(() => location.reload(), 700);
+      };
+    }
+    if ($('tgLink')) $('tgLink').onclick = async () => {
+      const j = await post('/account/telegram/code');
+      if (!j.ok) { $('tgOut').textContent = j.message || 'error'; return; }
+      $('tgOut').innerHTML = (j.link ? `<a class="btn btn-sm btn-primary" target="_blank" rel="noopener" href="${j.link}">✈ باز کردن ربات و اتصال</a><br>` : '') +
+        `کد اتصال (۱۵ دقیقه): <b class="mono">${j.code}</b>`;
+    };
+    if ($('ghRepos')) $('ghRepos').onclick = async () => {
+      $('ghList').textContent = '…';
+      const j = await (await fetch('/api/github/repos')).json();
+      $('ghList').innerHTML = j.error ? BB.escapeHtml(j.error) : (j.items || []).map(r =>
+        `<div>${r.private ? '🔒' : '🌐'} <a href="${BB.escapeHtml(r.url)}" target="_blank" rel="noopener">${BB.escapeHtml(r.name)}</a></div>`).join('') || '—';
+    };
+  })();
+</script>
+{% endblock %}

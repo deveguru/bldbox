@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}{{ t('pricing') }} — {{ settings.site_name }}{% endblock %}
+{% block body %}
+<div class="wrap">
+  {% if need and not allowed %}
+    <div class="card glow" style="margin-bottom:24px;border-color:rgba(237,25,8,.35)">
+      <div class="row">
+        <div style="font-size:30px">🔒</div>
+        <div>
+          <h3 style="margin:0 0 2px">{{ t('needs_plan_title') }}</h3>
+          <div class="muted small">{{ t('needs_plan_desc') }}</div>
+        </div>
+        <div class="spacer"></div>
+        <a href="/chat" class="btn btn-sm">{{ t('chat') }} →</a>
+      </div>
+    </div>
+  {% endif %}
+  {% if error %}<div class="alert">{{ error }}</div>{% endif %}
+  {% if not billing_ready %}
+    <div class="alert info">⚙ {{ t('gateway_not_ready') }}</div>
+  {% endif %}
+
+  {% if sub %}
+    <div class="card" style="margin-bottom:24px">
+      <div class="row">
+        <div class="badge ok">{{ t('sub_active') }}</div>
+        <div>
+          <h3 style="margin:0">{{ (sub['name_fa'] or t('current_plan')) if lang == 'fa' else (sub['name_en'] or t('current_plan')) }}</h3>
+          <div class="muted small">{{ t('active_until') }} {{ sub['ends_at']|date }} · {{ t('days_left') }} {{ sub_days }}</div>
+        </div>
+        <div class="spacer"></div>
+        <a href="/chat" class="btn btn-primary btn-sm">◈ {{ t('go_chat') }}</a>
+        <a href="/account" class="btn btn-sm">{{ t('payment_history') }}</a>
+      </div>
+    </div>
+  {% endif %}
+
+  <div class="section-head">
+    <div>
+      <h2>{{ t('choose_plan') }}</h2>
+      <p>{{ t('pricing_sub') }}</p>
+    </div>
+  </div>
+
+  <div class="plans">{% include "_plan_cards.html" %}</div>
+
+  <div class="pay-strip">
+    <span>🔒 {{ t('pay_secure') }}</span>
+    <span>⚡ {{ 'فعال‌سازی آنی پس از پرداخت' if lang == 'fa' else 'Activated right after payment' }}</span>
+    <span>💳 آقای پرداخت · AqayePardakht</span>
+  </div>
+
+  <div class="card wallet-card" style="margin-top:22px">
+    <div class="row" style="align-items:flex-start">
+      <div>
+        <h3 style="margin:0 0 4px">{{ 'کیف پول و پرداخت مستقیم' if lang == 'fa' else 'Wallet & pay-as-you-go' }}</h3>
+        <p class="muted small" style="margin:0;max-width:640px">
+          {{ 'بدون پلن هم می‌توانید کیف پول را شارژ کنید و فقط بابت همان مصرفی که دارید پرداخت کنید (با نرخ مصرف مستقیم). اعضای دارای پلن فعال می‌توانند علاوه بر سهمیه ماهانه، از موجودی کیف پول هم استفاده کنند.' if lang == 'fa' else 'No plan needed: top up your wallet and pay only for what you use (at the pay-as-you-go rate). Plan members can also draw from their wallet on top of the monthly quota.' }}
+        </p>
+      </div>
+      <div class="spacer"></div>
+      {% if user %}
+        <a href="/account" class="btn btn-primary">{{ 'شارژ کیف پول' if lang == 'fa' else 'Top up wallet' }}</a>
+      {% else %}
+        <a href="/login?next=/account" class="btn btn-primary">{{ t('login_to_buy') }}</a>
+      {% endif %}
+    </div>
+    <div class="pill-row" style="justify-content:flex-start;margin-top:14px">
+      <span class="pill">⟳ {{ 'شارژ سهمیه با ۶۰٪ قیمت پلن' if lang == 'fa' else 'Quota refill at 60% of plan price' }}</span>
+      <span class="pill">⏱ {{ 'سقف مصرف هر ۳ ساعت' if lang == 'fa' else '3-hour usage cap' }}</span>
+      <span class="pill">📊 {{ 'گزارش دقیق مصرف' if lang == 'fa' else 'Exact usage logs' }}</span>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="grid g2">
+    <div class="card">
+      <h3 style="font-size:16px">{{ 'پرداخت چطور انجام می‌شود؟' if lang == 'fa' else 'How does payment work?' }}</h3>
+      <p class="muted small" style="margin:0">{{ settings['payment_note_' + lang] or t('payment_note') }}</p>
+    </div>
+    <div class="card">
+      <h3 style="font-size:16px">{{ 'می‌توانم پلنم را عوض کنم؟' if lang == 'fa' else 'Can I change plans?' }}</h3>
+      <p class="muted small" style="margin:0">{{ 'بله. با خرید پلن جدید، روزهای باقی‌مانده‌ات حفظ می‌شود و از انتهای دوره فعلی تمدید می‌شود.' if lang == 'fa' else 'Yes. Buying another plan keeps your remaining days and stacks on top of the current period.' }}</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,44 @@
+{% for p in plans %}
+  {% set feats = (p['features_fa'] if lang == 'fa' else p['features_en']) or '' %}
+  <div class="plan {{ 'featured' if p['badge'] }}">
+    {% if p['badge'] %}<span class="badge-plan">{{ p['badge'] }}</span>{% endif %}
+    <h3>{{ p['name_fa'] if lang == 'fa' else p['name_en'] }}</h3>
+    <div class="en">{{ p['name_en'] }}</div>
+    <div class="price">
+      <span class="num">{{ p['price_toman']|money }}</span>
+      <span class="cur">{{ t('toman') }}</span>
+    </div>
+    <div class="dur">{{ p['days'] }} {{ 'روز' if lang == 'fa' else 'days' }} · {{ t('per_month') if p['days'] == 30 else '' }}</div>
+    {% if p['quota_chat'] or p['quota_image'] or p['quota_tools'] %}
+      <div class="pill-row" style="justify-content:flex-start;margin:0 0 6px">
+        {% if p['quota_chat'] %}<span class="pill">{{ p['quota_chat'] }} {{ 'پیام' if lang == 'fa' else 'messages' }}</span>{% endif %}
+        {% if p['quota_image'] %}<span class="pill">{{ p['quota_image'] }} {{ 'تصویر' if lang == 'fa' else 'images' }}</span>{% endif %}
+        {% if p['quota_tools'] %}<span class="pill">{{ p['quota_tools'] }} {{ 'ابزار' if lang == 'fa' else 'tools' }}</span>{% endif %}
+        {% if p['is_premium'] %}<span class="pill" style="border-color:rgba(122,0,240,.5);color:var(--primary-glow)">{{ 'حرفه‌ای' if lang == 'fa' else 'Pro' }}</span>{% endif %}
+      </div>
+    {% endif %}
+    <ul>
+      {% for line in feats.splitlines() if line.strip() %}
+        <li>{{ line.strip() }}</li>
+      {% endfor %}
+    </ul>
+    <div class="foot">
+      {% if user %}
+        {% if billing_ready %}
+          <form method="post" action="/billing/checkout">
+            <input type="hidden" name="csrf" value="{{ csrf }}">
+            <input type="hidden" name="plan_id" value="{{ p['id'] }}">
+            <button class="btn {{ 'btn-primary' if p['badge'] else '' }} btn-block btn-lg" type="submit">
+              {{ t('buy_now') }}
+            </button>
+          </form>
+        {% else %}
+          <button class="btn btn-block" disabled>{{ t('gateway_not_ready') }}</button>
+        {% endif %}
+      {% else %}
+        <a href="/login?next=/pricing" class="btn {{ 'btn-primary' if p['badge'] else '' }} btn-block btn-lg">{{ t('login_to_buy') }}</a>
+      {% endif %}
+      <div class="note">{{ t('pay_secure') }} · {{ t('gateway') }}: آقای پرداخت</div>
+    </div>
+  </div>
+{% endfor %}

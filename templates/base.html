@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="{{ lang }}" dir="{{ dir }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ settings.site_name }}{% endblock %}</title>
+  <meta name="description" content="{% block desc %}{{ settings['site_tagline_' + lang] or t('welcome_sub') }}{% endblock %}">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#050508">
+  <link rel="stylesheet" href="/static/css/app.css?v=20261024b">
+  <link rel="icon" href="{% if settings.logo_version %}/static/uploads/logo.png?v={{ settings.logo_version }}{% else %}/static/img/favicon.svg{% endif %}">
+  <script>
+    window.__CSRF = "{{ csrf }}";
+    window.__LANG = "{{ lang }}";
+    window.__DIR = "{{ dir }}";
+    window.__T = {
+      thinking: "{{ t('thinking') }}", send: "{{ t('send') }}",
+      upload: "{{ t('attach') }}", tool_running: "{{ t('tool_running') }}",
+      delete: "{{ t('delete') }}", confirm_delete: "{{ t('confirm_delete') }}",
+      error: "{{ 'خطا' if lang == 'fa' else 'Error' }}",
+      upload_error: "{{ 'آپلود ناموفق' if lang == 'fa' else 'Upload failed' }}"
+    };
+  </script>
+</head>
+<body class="page-{{ page|default('') }}">
+<header class="topbar">
+  <a class="brand" href="/">
+    {% if settings.logo_version %}
+      <img src="/static/uploads/logo.png?v={{ settings.logo_version }}" alt="{{ settings.site_name }}">
+    {% else %}
+      <span class="brand-mark">{{ settings.site_name[0]|upper }}</span>
+    {% endif %}
+    <span>{{ settings.site_name }}<small>{{ settings['site_tagline_' + lang] or t('brand_sub') }}</small></span>
+  </a>
+  <nav class="nav">
+    {% if user %}
+      <a href="/chat" class="{{ 'active' if page == 'chat' }}">◈ <span class="lbl">{{ t('chat') }}</span></a>
+      <a href="/pricing" class="{{ 'active' if page == 'pricing' }}">✦ <span class="lbl">{{ t('pricing') }}</span></a>
+      {% if user.role == 'admin' %}
+        <a href="/admin" class="{{ 'active' if page == 'admin' }}">⚙ <span class="lbl">{{ t('admin') }}</span></a>
+      {% endif %}
+      <a href="/account" class="{{ 'active' if page == 'account' }}">◉ <span class="lbl">{{ t('account') }}</span></a>
+      {% if sub %}
+        <span class="sub-pill" title="{{ t('active_until') }} {{ sub.ends_at|date }}"><span class="dot" style="width:6px;height:6px;border-radius:50%;background:var(--primary-glow)"></span>{{ t('days_left') }} <b>{{ sub_days }}</b></span>
+      {% elif gated and user.role != 'admin' %}
+        <a href="/pricing" class="cta">{{ t('subscribe') }}</a>
+      {% endif %}
+    {% else %}
+      <a href="/pricing">{{ t('pricing') }}</a>
+    {% endif %}
+    <div class="lang-switch">
+      <a href="/lang/fa?next={{ request.url.path }}" class="{{ 'on' if lang == 'fa' }}">FA</a>
+      <a href="/lang/en?next={{ request.url.path }}" class="{{ 'on' if lang == 'en' }}">EN</a>
+    </div>
+    {% if user %}
+      <a href="/u/{{ user.username }}" class="nav-avatar" title="{{ user.display_name or user.username }}">
+        <span class="avatar">{% if avatar_url(user) %}<img src="{{ avatar_url(user) }}" alt="">{% else %}{{ (user.display_name or user.username)[0]|upper }}{% endif %}</span>
+      </a>
+      <form method="post" action="/logout" style="display:inline">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <button class="link" type="submit">{{ t('logout') }}</button>
+      </form>
+    {% else %}
+      <a href="/login" class="btn btn-sm btn-ghost">{{ t('login') }}</a>
+      <a href="/register" class="btn btn-sm btn-primary">{{ t('register') }}</a>
+    {% endif %}
+  </nav>
+</header>
+
+{% block body %}{% endblock %}
+
+{% block footer %}
+<footer class="footer">
+  <div class="footer-in">
+    <div>{{ settings.site_name }} · {{ t('welcome_note') }}</div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap">
+      <a href="/pricing">{{ t('pricing') }}</a>
+      <a href="/login">{{ t('login') }}</a>
+      <a href="/healthz" class="mono">status</a>
+    </div>
+  </div>
+</footer>
+{% endblock %}
+
+<div id="toast" class="toast" hidden></div>
+<script src="/static/js/app.js?v=20261024b"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

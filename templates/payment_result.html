@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}{{ t('payment_ok') if ok else t('payment_fail') }} — {{ settings.site_name }}{% endblock %}
+{% block body %}
+<div class="wrap">
+  <div class="card result-card">
+    <div class="result-icon {{ 'ok' if ok else 'bad' }}">{{ '✓' if ok else '✕' }}</div>
+    <h1 style="font-size:26px;margin-bottom:8px">{{ t('payment_ok') if ok else t('payment_fail') }}</h1>
+    <p class="muted" style="margin-bottom:18px">{{ t('payment_ok_desc') if ok else t('payment_fail_desc') }}</p>
+    <div class="alert {{ 'ok' if ok else '' }}" style="text-align:start;margin-bottom:20px">{{ message }}</div>
+    {% if invoice or amount %}
+      <div class="kv" style="text-align:start;margin-bottom:22px">
+        {% if invoice %}<span class="muted">{{ t('invoice') }}</span><span class="mono small">{{ invoice }}</span>{% endif %}
+        {% if transid %}<span class="muted">{{ 'کد تراکنش' if lang == 'fa' else 'Transaction' }}</span><span class="mono small">{{ transid }}</span>{% endif %}
+        {% if amount %}<span class="muted">{{ t('amount') }}</span><span>{{ amount|money }} {{ t('toman') }}</span>{% endif %}
+      </div>
+    {% endif %}
+    {% if tg_link %}
+      <a href="{{ tg_link }}" class="btn btn-primary btn-lg btn-block tg-back" style="margin-bottom:12px">✈ {{ 'بازگشت به ربات تلگرام' if lang == 'fa' else 'Back to Telegram' }}</a>
+      <script>setTimeout(function () { location.href = {{ tg_link|tojson }}; }, 2500);</script>
+    {% endif %}
+    <div class="row" style="justify-content:center">
+      {% if ok %}
+        <a href="/chat" class="btn btn-primary">{{ t('go_chat') }} →</a>
+        <a href="/account" class="btn">{{ t('account') }}</a>
+      {% else %}
+        <a href="/pricing" class="btn btn-primary">{{ t('back_pricing') }}</a>
+        <a href="/account" class="btn">{{ t('account') }}</a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
