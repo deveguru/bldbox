@@ -1,114 +1,40 @@
 {% extends "base.html" %}
-{% block title %}{{ conv.title if conv else t('new_chat') }} — {{ settings.site_name }}{% endblock %}
+{% block title %}{{ conv.title if conv else settings.site_name }}{% endblock %}
+{% block header %}{% endblock %}
+{% block head_extra %}<link rel="stylesheet" href="/static/css/shell.css?v=20261025">{% endblock %}
+{% block footer %}{% endblock %}
 {% block body %}
-<div class="chat-shell">
-  <aside class="sidebar" id="sidebar">
-    <div class="sidebar-head">
-      <button class="btn btn-primary btn-block" id="newChat">＋ {{ t('new_chat') }}</button>
-    </div>
-    <div class="conv-list" id="convList">
-      {% for c in conversations %}
-        <div class="conv-item {{ 'active' if conv and conv.id == c.id }}" data-id="{{ c.id }}">
-          <span class="conv-dot"></span>
-          <a class="title" href="/chat?c={{ c.id }}">{{ c.title or t('new_chat') }}</a>
-          <button class="del" title="{{ t('delete') }}" data-del="{{ c.id }}">✕</button>
+{% set fa = lang == 'fa' %}
+{% set ai_img = ('/static/uploads/ai-avatar.png?v=' ~ settings.ai_avatar_version) if settings.ai_avatar_version else (('/static/uploads/logo.png?v=' ~ settings.logo_version) if settings.logo_version else '') %}
+<div class="app">
+  {% include '_sidebar.html' %}
+
+  <main class="cm {{ 'is-empty' if not messages }}" id="chatMain">
+    <header class="cm-top">
+      <button class="sb-icon" id="menuBtn" type="button" aria-label="menu">☰</button>
+      <div class="cm-model"><span class="live-dot"></span>{{ settings.model_label }}</div>
+      <span class="spacer"></span>
+      {% if guest %}<button class="btn btn-sm btn-primary" type="button" data-open-login>{{ 'ورود' if fa else 'Sign in' }}</button>{% endif %}
+    </header>
+
+    <div class="messages" id="messages">
+      {% for m in messages %}
+        {% set meta = (m.meta|fromjson) if m.meta else {} %}
+        <div class="msg {{ m.role }}">
+          {% if m.role == 'assistant' %}
+            <div class="who logo-who">{% if ai_img %}<img src="{{ ai_img }}" alt="AI">{% else %}<span>✦</span>{% endif %}</div>
+          {% endif %}
+          <div class="bubble">
+            <div class="content raw" data-raw="{{ m.content|e }}">{{ m.content }}</div>
+            {% if meta.files %}<div class="files-row" data-files="{{ meta.files|tojson|forceescape }}"></div>{% endif %}
+          </div>
         </div>
       {% endfor %}
     </div>
-    <div class="sidebar-foot">
-      <a href="/account" class="side-user">
-        <span class="avatar sm">{% if avatar_url(user) %}<img src="{{ avatar_url(user) }}" alt="">{% else %}{{ (user.display_name or user.username)[0]|upper }}{% endif %}</span>
-        <span class="side-user-txt">
-          <b>{{ user.username }}</b>
-          <small>{{ t('account') }}</small>
-        </span>
-        <span class="badge {{ 'accent' if user.role == 'admin' }}">{{ user.role }}</span>
-      </a>
-      {% if sub %}
-        <div class="side-meter">
-          <div class="row" style="justify-content:space-between;font-size:11.5px">
-            <span>{{ sub['name_fa'] or t('current_plan') if lang == 'fa' else (sub['name_en'] or t('current_plan')) }}</span>
-            <span>{{ sub_days }} {{ t('days_left') }}</span>
-          </div>
-        </div>
-      {% elif user.role == 'admin' %}
-        <div class="tiny dim">{{ 'دسترسی مدیر' if lang == 'fa' else 'Admin access' }}</div>
-      {% endif %}
-      {% if wallet and wallet.balance_toman %}
-        <div class="side-wallet">
-          <span>{{ 'کیف پول' if lang == 'fa' else 'Wallet' }}</span>
-          <b>{{ wallet.balance_toman|money }} {{ t('toman') }}</b>
-        </div>
-      {% endif %}
-      <div class="row" style="gap:8px;font-size:11.5px">
-        <a href="/pricing">✦ {{ t('pricing') }}</a>
-        {% if user.role == 'admin' %}<a href="/admin">⚙ {{ t('admin') }}</a>{% endif %}
-      </div>
-    </div>
-  </aside>
 
-  <main class="chat-main">
-    <div class="chat-head">
-      <button class="icon-btn btn btn-sm" id="menuBtn" style="display:none">☰</button>
-      <div class="ttl" id="chatTitle">{{ conv.title if conv else t('new_chat') }}</div>
-      <div class="model-badge">
-        <span class="live-dot"></span>
-        <span class="small muted nowrap">{{ settings.model_label }}</span>
-        {% if sub %}<span class="sub-pill nowrap">{{ sub_days }} {{ t('days_left') }}</span>{% endif %}
-      </div>
-    </div>
-
-    <div class="messages" id="messages">
-      {% if messages %}
-        {% for m in messages %}
-          {% set meta = (m.meta|fromjson) if m.meta else {} %}
-          <div class="msg {{ m.role }}">
-            {% if m.role == 'assistant' %}
-              <div class="who logo-who">
-                {% if settings.logo_version %}
-                  <img src="/static/uploads/logo.png?v={{ settings.logo_version }}" alt="{{ settings.site_name }}">
-                {% else %}<span>✦</span>{% endif %}
-              </div>
-            {% else %}
-              <div class="who">{% if avatar_url(user) %}<img src="{{ avatar_url(user) }}" alt="">{% else %}{{ user.username[0]|upper }}{% endif %}</div>
-            {% endif %}
-            <div class="bubble">
-              <div class="content raw" data-raw="{{ m.content|e }}">{{ m.content }}</div>
-              {% if meta.files %}
-                <div class="files-row">
-                  {% for f in meta.files %}
-                    <div class="file-card">
-                      <div class="ficon">▤</div>
-                      <div style="min-width:0">
-                        <div class="fname">{{ f.name }}</div>
-                        <div class="fsize">{{ (f.size or 0) // 1024 }} KB</div>
-                      </div>
-                      <a class="btn btn-sm" href="{{ f.url }}" target="_blank" rel="noopener">↓</a>
-                    </div>
-                  {% endfor %}
-                </div>
-              {% endif %}
-            </div>
-          </div>
-        {% endfor %}
-      {% else %}
-        <div class="welcome" id="welcome">
-          <div class="halo logo-halo">
-            {% if settings.logo_version %}
-              <img src="/static/uploads/logo.png?v={{ settings.logo_version }}" alt="{{ settings.site_name }}">
-            {% else %}<span>✦</span>{% endif %}
-          </div>
-          <h2>{{ t('welcome_title') }}</h2>
-          <p>{{ settings['welcome_message_' + lang] or t('welcome_sub') }}</p>
-          <div class="chips">
-            <button class="chip" data-fill="{{ t('ex1') }}">{{ t('ex1') }}</button>
-            <button class="chip" data-fill="{{ t('ex2') }}">{{ t('ex2') }}</button>
-            <button class="chip" data-fill="{{ t('ex3') }}">{{ t('ex3') }}</button>
-            <button class="chip" data-fill="{{ t('ex4') }}">{{ t('ex4') }}</button>
-          </div>
-          <div class="tiny dim" style="margin-top:18px">{{ 'موتور: ' if lang == 'fa' else 'Engine: ' }}{{ settings.model_label }}</div>
-        </div>
-      {% endif %}
+    <div class="cm-hero" id="welcome">
+      <div class="cm-hero-logo">{% if ai_img %}<img src="{{ ai_img }}" alt="">{% else %}✦{% endif %}</div>
+      <h1>{{ settings['welcome_message_' + lang] or ('امروز چه کاری برات انجام بدم؟' if fa else 'What can I do for you?') }}</h1>
     </div>
 
     <div class="tool-strip" id="toolStrip"></div>
@@ -118,57 +44,59 @@
       <div class="voice-live" id="voiceLive" hidden>
         <div class="vl-head">
           <span class="vl-wave"><i></i><i></i><i></i><i></i><i></i></span>
-          <b id="vlState">{{ 'در حال شنیدن…' if lang == 'fa' else 'Listening…' }}</b>
+          <b id="vlState">{{ 'در حال شنیدن…' if fa else 'Listening…' }}</b>
           <span class="vl-timer mono" id="vlTimer">00:00</span>
           <span class="spacer"></span>
           <span class="vl-count" id="vlCount" hidden></span>
-          <button class="btn btn-sm" id="vlSend" type="button">{{ 'ارسال' if lang == 'fa' else 'Send' }}</button>
+          <button class="btn btn-sm" id="vlSend" type="button">{{ 'ارسال' if fa else 'Send' }}</button>
           <button class="btn btn-sm btn-ghost" id="vlStop" type="button">✕</button>
         </div>
-        <div class="vl-text" id="vlText"><span class="dim">{{ 'صحبت کن؛ متن همین‌جا نوشته می‌شود…' if lang == 'fa' else 'Speak — your words appear here…' }}</span></div>
+        <div class="vl-text" id="vlText"></div>
         <div class="vl-silence"><i id="vlBar"></i></div>
       </div>
       <div class="composer">
-        <button class="icon-btn" id="attachBtn" title="{{ t('attach') }}">＋</button>
-        <input type="file" id="fileInput" hidden multiple>
-        <textarea id="input" rows="1" placeholder="{{ t('placeholder') }}"></textarea>
-        {% if settings.enable_web_search == '1' %}
-        <button class="icon-btn web-toggle" id="webBtn" type="button" aria-pressed="false" title="{{ 'جستجوی وب' if lang == 'fa' else 'Web search' }}">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18z"/></svg>
-        </button>
-        {% endif %}
-        {% if settings.enable_voice == '1' %}
-        <button class="icon-btn mic" id="micBtn" type="button" title="{{ 'تبدیل گفتار به متن (ارسال خودکار پس از سکوت)' if lang == 'fa' else 'Dictate (auto-send after silence)' }}">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/></svg>
-        </button>
-        <button class="icon-btn talk" id="talkBtn" type="button" title="{{ 'گفتگوی صوتی (پاسخ با صدا)' if lang == 'fa' else 'Voice conversation' }}">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 10v4"/><path d="M8 6v12"/><path d="M12 3v18"/><path d="M16 7v10"/><path d="M20 10v4"/></svg>
-        </button>
-        {% endif %}
-        <button class="send" id="sendBtn" title="{{ t('send') }}" aria-label="{{ t('send') }}">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4Z"/></svg>
-        </button>
+        <textarea id="input" rows="1" dir="auto" placeholder="{{ 'هر چیزی بپرس…' if fa else 'Ask anything…' }}"></textarea>
+        <div class="composer-bar">
+          <button class="icon-btn" id="attachBtn" type="button" title="{{ t('attach') }}" {% if guest %}data-need-login{% endif %}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+          <input type="file" id="fileInput" hidden multiple>
+          {% if settings.enable_web_search == '1' %}
+          <button class="icon-btn web-toggle pill" id="webBtn" type="button" aria-pressed="false" {% if guest %}data-need-login{% endif %}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18z"/></svg>
+            <span>{{ 'جستجو' if fa else 'Search' }}</span></button>
+          {% endif %}
+          <span class="spacer"></span>
+          {% if settings.enable_voice == '1' %}
+          <button class="icon-btn mic" id="micBtn" type="button" title="{{ 'تبدیل گفتار به متن' if fa else 'Dictate' }}" {% if guest %}data-need-login{% endif %}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/></svg></button>
+          <button class="icon-btn talk" id="talkBtn" type="button" title="{{ 'گفتگوی صوتی' if fa else 'Voice mode' }}" {% if guest %}data-need-login{% endif %}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 10v4"/><path d="M8 6v12"/><path d="M12 3v18"/><path d="M16 7v10"/><path d="M20 10v4"/></svg></button>
+          {% endif %}
+          <button class="send" id="sendBtn" type="button" aria-label="{{ t('send') }}">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg></button>
+        </div>
       </div>
-      <div class="composer-meta">
-        <span id="statusLine">{{ 'آماده' if lang == 'fa' else 'Ready' }}</span>
-        <span class="spacer"></span>
-        <span>{{ 'Enter برای ارسال · Shift+Enter خط جدید' if lang == 'fa' else 'Enter to send · Shift+Enter for a new line' }}</span>
-      </div>
+      <div class="cm-note" id="statusLine">{{ ('حالت مهمان؛ گفتگوها فقط در همین مرورگر می‌ماند.' if fa else 'Guest mode — chats stay in this browser.') if guest else ('هوش مصنوعی ممکن است اشتباه کند.' if fa else 'AI can make mistakes.') }}</div>
     </div>
   </main>
 </div>
+{% include '_login_modal.html' %}
 {% endblock %}
-{% block footer %}{% endblock %}
 {% block scripts %}
+{% set ai_img = ('/static/uploads/ai-avatar.png?v=' ~ settings.ai_avatar_version) if settings.ai_avatar_version else (('/static/uploads/logo.png?v=' ~ settings.logo_version) if settings.logo_version else '') %}
 <script src="/static/vendor/marked.min.js"></script>
 <script src="/static/vendor/purify.min.js"></script>
+<script src="/static/vendor/highlight.min.js"></script>
 <script>
+  window.__GUEST = {{ 'true' if guest else 'false' }};
+  window.__GUEST_ENABLED = {{ 'true' if guest_enabled is not defined or guest_enabled else 'false' }};
   window.__CONV = "{{ conv.id if conv else '' }}";
-  window.__USERNAME = "{{ username }}";
+  window.__USERNAME = {{ (username or '')|tojson }};
   window.__VOICE = {{ 'true' if settings.enable_voice == '1' else 'false' }};
   window.__VOICE_SILENCE = {{ (settings.voice_silence_seconds or 3)|int }};
   window.__VOICE_LANG = {{ (settings.voice_lang or 'fa-IR')|tojson }};
-  window.__LOGO = "{% if settings.logo_version %}/static/uploads/logo.png?v={{ settings.logo_version }}{% endif %}";
+  window.__LOGO = {{ ai_img|tojson }};
 </script>
-<script src="/static/js/chat.js?v=20261024b"></script>
+<script src="/static/js/shell.js?v=20261025"></script>
+<script src="/static/js/chat.js?v=20261025"></script>
 {% endblock %}

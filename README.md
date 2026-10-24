@@ -1,153 +1,64 @@
 <p align="center">
-  <a href="https://bldbox.ir"><img src=".github/banner.svg" alt="BldBox — AI Workshop" width="100%"></a>
+  <a href="https://bldbox.ir"><img src=".github/hero.svg" alt="BldBox — AI Workshop" width="100%"></a>
 </p>
 
 <p align="center">
-  <a href="https://bldbox.ir"><img src="https://img.shields.io/badge/🌐_Live-bldbox.ir-7A00F0?style=for-the-badge&labelColor=0A0A10" alt="bldbox.ir"></a>
-  <img src="https://img.shields.io/badge/UI-RTL_·_فارسی-9B30FF?style=for-the-badge&labelColor=0A0A10" alt="RTL">
-  <img src="https://img.shields.io/badge/theme-dark_·_neon-00E5FF?style=for-the-badge&labelColor=0A0A10" alt="dark">
-  <img src="https://img.shields.io/badge/font-Vazirmatn-ED1908?style=for-the-badge&labelColor=0A0A10" alt="Vazirmatn">
+  <a href="https://bldbox.ir"><img src="https://img.shields.io/badge/LIVE-bldbox.ir-9B30FF?style=for-the-badge&labelColor=0A0A10" alt="bldbox.ir"></a>
+  <img src="https://img.shields.io/badge/UI-RTL%20first-7A00F0?style=for-the-badge&labelColor=0A0A10" alt="RTL">
+  <img src="https://img.shields.io/badge/font-Vazirmatn-00B7D8?style=for-the-badge&labelColor=0A0A10" alt="Vazirmatn">
+  <img src="https://img.shields.io/badge/theme-dark%20neon-ED1908?style=for-the-badge&labelColor=0A0A10" alt="dark neon">
 </p>
 
-<div dir="rtl" align="center">
+<br>
 
-## ✦ بیلدباکس — کارگاه هوش مصنوعی
+<p align="center">
+  <a href="https://bldbox.ir"><img src=".github/features.svg" alt="Features" width="100%"></a>
+</p>
 
-**فقط بگو چی می‌خوای؛ بیلدباکس خودش ابزار لازم را انتخاب می‌کند و کار را انجام می‌دهد.**
+<br>
 
-</div>
+<p align="center">
+  <a href="https://bldbox.ir/code"><img src=".github/code.svg" alt="BldBox Code" width="100%"></a>
+</p>
 
----
+<br>
 
-<div dir="rtl">
+## Frontend
 
-### ⚡ بیلدباکس چه کارهایی می‌کند؟
-
-<table>
-<tr>
-<td width="33%" valign="top">
-
-#### 💬 چت هوشمند
-گفتگو با مدل‌های قدرتمند هوش مصنوعی که فقط جواب نمی‌دهند، **کار را انجام می‌دهند**.
-
-</td>
-<td width="33%" valign="top">
-
-#### 🎙 گفتگوی صوتی
-حرف بزن و ببین متنت همان لحظه نوشته می‌شود؛ بعد از چند ثانیه سکوت خودکار ارسال می‌شود و جواب را با صدا می‌شنوی.
-
-</td>
-<td width="33%" valign="top">
-
-#### 🌐 جستجوی زنده وب
-با یک کلیک، جواب‌ها را با جدیدترین اطلاعات وب و همراه با لینک منبع بگیر.
-
-</td>
-</tr>
-<tr>
-<td valign="top">
-
-#### 🎨 تولید تصویر
-تصویر دلخواهت را فقط با توصیف بساز؛ ویرایش، برش و کلاژ هم داری.
-
-</td>
-<td valign="top">
-
-#### 🎬 صدا و ویدیو
-ادغام فایل‌های صوتی، برش و تبدیل ویدیو، استخراج صدا، متن به گفتار و گفتار به متن.
-
-</td>
-<td valign="top">
-
-#### 📄 اسناد و فایل‌ها
-PDF، Word، PowerPoint، HTML، نمودار، نقشه ذهنی، OCR فارسی و انگلیسی.
-
-</td>
-</tr>
-<tr>
-<td valign="top">
-
-#### ✈ داخل تلگرام هم هست
-همه خدمات بیلدباکس در ربات تلگرام: ثبت‌نام، چت، تصویر، ویس و خرید پلن.
-
-</td>
-<td valign="top">
-
-#### 👤 پروفایل شخصی
-صفحه پروفایل گرافیکی با نمودار فعالیت، رنگ و بنر دلخواه و کنترل کامل حریم خصوصی.
-
-</td>
-<td valign="top">
-
-#### ⌥ اتصال به گیت‌هاب
-پروژه‌هایی که با هوش مصنوعی می‌سازی را مستقیم در ریپوی خودت پوش کن.
-
-</td>
-</tr>
-</table>
-
-</div>
-
----
-
-<div dir="rtl">
-
-### 🧩 این ریپو چیست؟
-
-این مخزن **رابط کاربری (فرانت‌اند)** بیلدباکس است: قالب‌ها، استایل‌ها و اسکریپت‌های سمت مرورگر.
-منطق سرور، پنل مدیریت، پرداخت و تنظیمات امنیتی در این مخزن نیستند.
-
-</div>
+This repository holds the **BldBox web frontend** — Jinja2 templates, stylesheets and browser
+scripts. Server code, the admin panel, payments and configuration are not part of it.
 
 ```text
-📦 bldbox
- ├─ 🖼  templates/          قالب‌های Jinja2 صفحات عمومی
- │   ├─ base.html           اسکلت مشترک، هدر و فوتر
- │   ├─ landing.html        صفحه اصلی
- │   ├─ chat.html           محیط چت + ورودی صوتی + جستجوی وب
- │   ├─ login.html          ورود با رمز یا پیامک
- │   ├─ pricing.html        پلن‌ها
- │   ├─ account.html        حساب کاربری و اتصال‌ها
- │   └─ profile.html        پروفایل عمومی (شبیه گیت‌هاب)
- └─ 🎨 static/
-     ├─ css/app.css         تم تیره نئونی با پالت برند
-     ├─ js/chat.js          استریم پاسخ، تایپ زنده، صدا، پیش‌نمایش فایل
-     ├─ js/app.js           ابزارهای مشترک UI
-     ├─ fonts/              وزیرمتن
-     └─ vendor/             marked · DOMPurify
+templates/
+  base.html            shared <head>, theme, i18n strings
+  chat.html            home page: ChatGPT-style chat, guest mode, voice, web search
+  _sidebar.html        tools + chat history + account menu
+  _login_modal.html    phone sign-in (OTP)
+  code.html            BldBox Code: build apps from a prompt, live preview, ZIP export
+  login.html  pricing.html  account.html  profile.html  payment_result.html  _plan_cards.html
+static/
+  css/app.css          brand palette, components, neon scrollbars, code boxes
+  css/shell.css        app shell: sidebar, centred composer, RTL/LTR message layout
+  css/code.css         BldBox Code workspace
+  js/chat.js           streaming answers, guest store (localStorage), live dictation,
+                       silence auto-send, voice conversation, file previews
+  js/code.js           project files, sandboxed preview, code viewer
+  js/shell.js          sidebar drawer, sign-in modal, guest gating
+  js/app.js            Markdown, per-paragraph direction, syntax highlighting, copy/download
+  fonts/  vendor/      Vazirmatn · marked · DOMPurify · highlight.js
 ```
 
-<div dir="rtl">
+| Palette | | | | | |
+|:-:|:-:|:-:|:-:|:-:|:-:|
+| ![](https://img.shields.io/badge/-%237A00F0-7A00F0?style=flat-square) | ![](https://img.shields.io/badge/-%239B30FF-9B30FF?style=flat-square) | ![](https://img.shields.io/badge/-%23B266FF-B266FF?style=flat-square) | ![](https://img.shields.io/badge/-%2300E5FF-00B7D8?style=flat-square) | ![](https://img.shields.io/badge/-%23ED1908-ED1908?style=flat-square) | ![](https://img.shields.io/badge/-%23050508-050508?style=flat-square) |
 
-### 🎨 پالت برند
-
-</div>
-
-<p align="center">
-  <img src="https://img.shields.io/badge/%20-%237A00F0-7A00F0?style=for-the-badge" alt="#7A00F0">
-  <img src="https://img.shields.io/badge/%20-%239B30FF-9B30FF?style=for-the-badge" alt="#9B30FF">
-  <img src="https://img.shields.io/badge/%20-%23B266FF-B266FF?style=for-the-badge" alt="#B266FF">
-  <img src="https://img.shields.io/badge/%20-%23ED1908-ED1908?style=for-the-badge" alt="#ED1908">
-  <img src="https://img.shields.io/badge/%20-%23C8BAE3-C8BAE3?style=for-the-badge" alt="#C8BAE3">
-  <img src="https://img.shields.io/badge/%20-%23050508-050508?style=for-the-badge" alt="#050508">
-</p>
-
----
-
-<div dir="rtl" align="center">
-
-## 🚀 همین حالا امتحانش کن
-
-بدون نصب، بدون تنظیم — فقط وارد شو و شروع کن.
-
-</div>
+<br>
 
 <p align="center">
   <a href="https://bldbox.ir">
-    <img src="https://img.shields.io/badge/ورود_به_بیلدباکس_←-bldbox.ir-7A00F0?style=for-the-badge&labelColor=ED1908&logoColor=white" alt="ورود به bldbox.ir" height="48">
+    <img src="https://img.shields.io/badge/%E2%86%92%20%20Open%20BldBox-bldbox.ir-9B30FF?style=for-the-badge&labelColor=ED1908" alt="Open bldbox.ir" height="46">
   </a>
 </p>
-
 <p align="center"><a href="https://bldbox.ir"><b>https://bldbox.ir</b></a></p>
 
-<p align="center"><sub>© BldBox · ساخته‌شده با ❤️ و هوش مصنوعی</sub></p>
+<p align="center"><sub>Vazirmatn by Saber Rastikerdar (OFL) · marked (MIT) · DOMPurify (Apache-2.0/MPL-2.0) · highlight.js (BSD-3)</sub></p>

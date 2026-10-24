@@ -7,7 +7,9 @@
   <meta name="description" content="{% block desc %}{{ settings['site_tagline_' + lang] or t('welcome_sub') }}{% endblock %}">
   <meta name="color-scheme" content="dark">
   <meta name="theme-color" content="#050508">
-  <link rel="stylesheet" href="/static/css/app.css?v=20261024b">
+  <link rel="stylesheet" href="/static/vendor/hljs-dark.min.css">
+  <link rel="stylesheet" href="/static/css/app.css?v=20261025">
+  {% block head_extra %}{% endblock %}
   <link rel="icon" href="{% if settings.logo_version %}/static/uploads/logo.png?v={{ settings.logo_version }}{% else %}/static/img/favicon.svg{% endif %}">
   <script>
     window.__CSRF = "{{ csrf }}";
@@ -23,6 +25,7 @@
   </script>
 </head>
 <body class="page-{{ page|default('') }}">
+{% block header %}
 <header class="topbar">
   <a class="brand" href="/">
     {% if settings.logo_version %}
@@ -34,7 +37,7 @@
   </a>
   <nav class="nav">
     {% if user %}
-      <a href="/chat" class="{{ 'active' if page == 'chat' }}">◈ <span class="lbl">{{ t('chat') }}</span></a>
+      <a href="/" class="{{ 'active' if page == 'chat' }}">◈ <span class="lbl">{{ t('chat') }}</span></a>
       <a href="/pricing" class="{{ 'active' if page == 'pricing' }}">✦ <span class="lbl">{{ t('pricing') }}</span></a>
       {% if user.role == 'admin' %}
         <a href="/admin" class="{{ 'active' if page == 'admin' }}">⚙ <span class="lbl">{{ t('admin') }}</span></a>
@@ -66,6 +69,7 @@
     {% endif %}
   </nav>
 </header>
+{% endblock %}
 
 {% block body %}{% endblock %}
 
@@ -83,7 +87,7 @@
 {% endblock %}
 
 <div id="toast" class="toast" hidden></div>
-<script src="/static/js/app.js?v=20261024b"></script>
+<script src="/static/js/app.js?v=20261025"></script>
 {% block scripts %}{% endblock %}
 </body>
 </html>

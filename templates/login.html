@@ -28,8 +28,8 @@
   }
   async function verify() {
     const j = await (await fetch('/auth/sms/verify', { method: 'POST', headers: H,
-      body: JSON.stringify({ phone: $('smsPhone').value, code: $('smsCode').value, next: {{ (next or '/chat')|tojson }} }) })).json();
-    if (j.ok) location.href = j.next || '/chat'; else BB.toast(j.message || 'error', 'err');
+      body: JSON.stringify({ phone: $('smsPhone').value, code: $('smsCode').value, next: {{ (next or '/')|tojson }} }) })).json();
+    if (j.ok) location.href = j.next || '/'; else BB.toast(j.message || 'error', 'err');
   }
   $('smsSend').onclick = send; $('smsResend').onclick = send; $('smsVerify').onclick = verify;
   $('smsBack').onclick = e => { e.preventDefault(); $('smsStep2').hidden = true; $('smsStep1').hidden = false; };
@@ -87,7 +87,7 @@
     {% endif %}
     {% if mode == 'login' %}
     <form method="post" action="/login" id="pwPane" class="auth-pane" {{ 'hidden' if sms_login }}>
-      <input type="hidden" name="next" value="{{ next|default('/chat') }}">
+      <input type="hidden" name="next" value="{{ next|default('/') }}">
       <label class="field"><span class="label">{{ t('username') }}{{ ' یا موبایل' if lang == 'fa' else ' or mobile' }}</span>
         <input class="input" name="username" autocomplete="username" required {{ '' if sms_login else 'autofocus' }}></label>
       <label class="field"><span class="label">{{ t('password') }}</span>

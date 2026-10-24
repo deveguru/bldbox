@@ -692,3 +692,49 @@ button.link[disabled]{color:var(--text-dim);cursor:default}
   .pf-tools{grid-template-columns:1fr}
   .acc-avatar-wrap{width:90px}
 }
+
+.preview-body{background:#0a0a12}
+.preview-body iframe{background:#fff}
+
+/* ---------- thin neon purple scrollbars (every scrolling area) ---------- */
+*{scrollbar-width:thin;scrollbar-color:#9B30FF transparent}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{border-radius:10px;border:0;
+  background:linear-gradient(180deg,#B266FF,#7A00F0 55%,#ff2bd6);
+  box-shadow:0 0 6px rgba(155,48,255,.9),0 0 14px rgba(155,48,255,.55)}
+::-webkit-scrollbar-thumb:hover{background:linear-gradient(180deg,#d2a6ff,#9B30FF 55%,#ff5be3);
+  box-shadow:0 0 8px rgba(178,102,255,1),0 0 20px rgba(178,102,255,.7)}
+::-webkit-scrollbar-corner{background:transparent}
+
+/* ---------- AI avatar spins while the answer is being written ---------- */
+@keyframes aiSpin{to{transform:rotate(360deg)}}
+.msg.assistant.streaming .logo-who{box-shadow:0 0 0 2px rgba(178,102,255,.55),0 0 22px rgba(155,48,255,.7)}
+.msg.assistant.streaming .logo-who img,
+.msg.assistant.streaming .logo-who span{animation:aiSpin 2.8s linear infinite;display:block}
+.logo-who img{border-radius:50%;object-fit:cover}
+
+/* ---------- code boxes: colours + copy + download ---------- */
+.code-box{margin:12px 0;border-radius:14px;overflow:hidden;border:1px solid rgba(155,48,255,.35);
+  background:#0b0a14;box-shadow:0 8px 30px rgba(0,0,0,.35),0 0 18px rgba(122,0,240,.12);direction:ltr;text-align:left}
+.code-head{display:flex;align-items:center;gap:6px;padding:6px 10px;background:linear-gradient(90deg,rgba(122,0,240,.22),rgba(0,229,255,.06));
+  border-bottom:1px solid rgba(155,48,255,.25);font-size:12px}
+.code-lang{font-family:ui-monospace,Consolas,monospace;color:#d8c4ff;text-transform:lowercase;letter-spacing:.04em}
+.code-sp{flex:1}
+.code-btn{border:1px solid rgba(178,102,255,.4);background:rgba(155,48,255,.12);color:#eadcff;border-radius:8px;
+  padding:3px 10px;font-size:11.5px;cursor:pointer;transition:.15s;font-family:inherit}
+.code-btn:hover{background:rgba(155,48,255,.3);box-shadow:0 0 12px rgba(155,48,255,.45)}
+.code-box pre{margin:0;padding:14px 16px;overflow:auto;max-height:520px;background:transparent!important;border:0!important;border-radius:0}
+.code-box code.hljs,.code-box pre code{background:transparent!important;padding:0;font-family:ui-monospace,"Cascadia Code",Consolas,monospace;
+  font-size:13px;line-height:1.65;white-space:pre}
+
+/* ---------- profile cover ---------- */
+.pf-banner.has-cover{background-size:cover;background-position:center}
+.pf-banner{position:relative}
+.pf-cover-edit{position:absolute;inset-inline-end:16px;bottom:14px;padding:6px 12px;border-radius:10px;font-size:12.5px;
+  background:rgba(5,5,8,.65);color:#fff;border:1px solid rgba(255,255,255,.2);backdrop-filter:blur(6px)}
+.acc-cover{position:relative;height:150px;border-radius:14px;margin:16px 0 4px;background-size:cover;background-position:center;
+  overflow:hidden;border:1px solid var(--line)}
+.acc-cover-actions{position:absolute;inset-inline-end:12px;bottom:12px;display:flex;gap:6px}
+.acc-cover-actions .btn{background:rgba(5,5,8,.65);backdrop-filter:blur(6px)}
+.acc-cover-hint{position:absolute;inset-inline-start:12px;bottom:14px;color:rgba(255,255,255,.75);text-shadow:0 1px 4px #000}

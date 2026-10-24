@@ -1,0 +1,25 @@
+{# Phone sign-in modal (OTP). Falls back to the password page when SMS is not configured. #}
+{% set fa = lang == 'fa' %}
+<div class="lm" id="loginModal" hidden>
+  <div class="lm-box" role="dialog" aria-modal="true">
+    <button class="lm-x" type="button" data-close-login aria-label="close">✕</button>
+    <div class="lm-logo">{% if settings.logo_version %}<img src="/static/uploads/logo.png?v={{ settings.logo_version }}" alt="">{% else %}✦{% endif %}</div>
+    <h3>{{ 'ورود به ' ~ settings.site_name if fa else 'Sign in to ' ~ settings.site_name }}</h3>
+    <p class="lm-sub">{{ '۷ روز استفاده رایگان از همه ابزارها' if fa else '7 days free, every tool' }}</p>
+    {% if sms_login %}
+      <div id="lmStep1">
+        <input class="input lm-in" id="lmPhone" inputmode="tel" dir="ltr" placeholder="09123456789" autocomplete="tel">
+        <button class="btn btn-primary btn-block btn-lg" id="lmSend" type="button">{{ 'دریافت کد' if fa else 'Send code' }}</button>
+      </div>
+      <div id="lmStep2" hidden>
+        <input class="input lm-in otp-input" id="lmCode" inputmode="numeric" dir="ltr" maxlength="6" autocomplete="one-time-code" placeholder="••••••">
+        <button class="btn btn-primary btn-block btn-lg" id="lmVerify" type="button">{{ 'ورود' if fa else 'Sign in' }}</button>
+        <div class="lm-row"><a href="#" id="lmBack">{{ 'تغییر شماره' if fa else 'Change number' }}</a><button class="link" type="button" id="lmResend" disabled>{{ 'ارسال مجدد' if fa else 'Resend' }} <span id="lmTimer"></span></button></div>
+      </div>
+      <a class="lm-alt" href="/login">{{ 'ورود با نام کاربری و رمز' if fa else 'Use username & password' }}</a>
+    {% else %}
+      <a class="btn btn-primary btn-block btn-lg" href="/login">{{ 'ورود' if fa else 'Sign in' }}</a>
+      <a class="btn btn-block" href="/register" style="margin-top:8px">{{ 'ساخت حساب' if fa else 'Create account' }}</a>
+    {% endif %}
+  </div>
+</div>

@@ -4,7 +4,11 @@
 {% block body %}
 {% set accent = prof.accent or '#9B30FF' %}
 <div class="pf" style="--acc:{{ accent }}">
-  <div class="pf-banner banner-{{ prof.banner }}"><div class="pf-grid"></div></div>
+  {% set cover = cover_url(owner) %}
+  <div class="pf-banner banner-{{ prof.banner }}{{ ' has-cover' if cover }}"{% if cover %} style="background-image:url('{{ cover }}')"{% endif %}>
+    {% if not cover %}<div class="pf-grid"></div>{% endif %}
+    {% if is_self %}<a class="pf-cover-edit" href="/account#profile">📷 {{ 'تغییر کاور' if lang == 'fa' else 'Change cover' }}</a>{% endif %}
+  </div>
   <div class="pf-wrap">
     {% if hidden %}
       <div class="card pf-hidden">

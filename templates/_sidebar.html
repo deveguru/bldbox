@@ -1,0 +1,66 @@
+{# Shared app sidebar: brand, new chat, tools, history, account. expects: page, user, guest #}
+{% set fa = lang == 'fa' %}
+<aside class="sb" id="sidebar">
+  <div class="sb-top">
+    <a class="sb-brand" href="/">
+      {% if settings.logo_version %}<img src="/static/uploads/logo.png?v={{ settings.logo_version }}" alt="">{% else %}<span class="sb-mark">{{ settings.site_name[0]|upper }}</span>{% endif %}
+      <b>{{ settings.site_name }}</b>
+    </a>
+    <button class="sb-icon" id="sbClose" type="button" aria-label="close">✕</button>
+  </div>
+
+  <a class="sb-new" href="/" id="newChat">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4Z"/></svg>
+    {{ 'گفتگوی جدید' if fa else 'New chat' }}
+  </a>
+
+  <nav class="sb-tools">
+    {% if settings.code_enabled == '1' %}
+    <a class="sb-tool {{ 'on' if page == 'code' }}" href="/code" {% if guest %}data-need-login{% endif %}>
+      <span class="sb-ti code">&lt;/&gt;</span>{{ settings.code_name or 'BldBox Code' }}</a>
+    {% endif %}
+    <a class="sb-tool" href="/?mode=image" data-mode="image" {% if guest %}data-need-login{% endif %}>
+      <span class="sb-ti img">◐</span>{{ 'ساخت تصویر' if fa else 'Images' }}</a>
+    {% if settings.enable_voice == '1' %}
+    <a class="sb-tool" href="/?mode=voice" data-mode="voice" {% if guest %}data-need-login{% endif %}>
+      <span class="sb-ti voice">◉</span>{{ 'گفتگوی صوتی' if fa else 'Voice' }}</a>
+    {% endif %}
+  </nav>
+
+  <div class="sb-label">{{ 'گفتگوها' if fa else 'Chats' }}</div>
+  <div class="sb-list" id="convList">
+    {% for c in conversations or [] %}
+      <div class="conv-item {{ 'active' if conv and conv.id == c.id }}" data-id="{{ c.id }}">
+        <a class="title" href="/?c={{ c.id }}">{{ c.title or ('گفتگوی جدید' if fa else 'New chat') }}</a>
+        <button class="del" title="{{ t('delete') }}" data-del="{{ c.id }}">✕</button>
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="sb-foot">
+    {% if user %}
+      <details class="sb-user">
+        <summary>
+          <span class="avatar sm">{% if avatar_url(user) %}<img src="{{ avatar_url(user) }}" alt="">{% else %}{{ (user.display_name or user.username)[0]|upper }}{% endif %}</span>
+          <span class="sb-uname">{{ user.display_name or user.username }}
+            <small>{% if sub %}{{ sub_days }} {{ 'روز باقی‌مانده' if fa else 'days left' }}{% elif user.role == 'admin' %}admin{% else %}{{ 'بدون پلن' if fa else 'No plan' }}{% endif %}</small></span>
+        </summary>
+        <div class="sb-menu">
+          <a href="/u/{{ user.username }}">◉ {{ 'پروفایل' if fa else 'Profile' }}</a>
+          <a href="/account">⚙ {{ 'حساب و تنظیمات' if fa else 'Account' }}</a>
+          <a href="/pricing">✦ {{ 'پلن‌ها' if fa else 'Plans' }}</a>
+          {% if user.role == 'admin' %}<a href="/admin">⌘ {{ 'مدیریت' if fa else 'Admin' }}</a>{% endif %}
+          <a href="/lang/{{ 'en' if fa else 'fa' }}?next={{ request.url.path }}">🌐 {{ 'English' if fa else 'فارسی' }}</a>
+          <form method="post" action="/logout"><input type="hidden" name="csrf" value="{{ csrf }}"><button type="submit">⏻ {{ 'خروج' if fa else 'Sign out' }}</button></form>
+        </div>
+      </details>
+    {% else %}
+      <div class="sb-guest">
+        <b>{{ '۷ روز رایگان' if fa else '7 days free' }}</b>
+        <span>{{ 'با شماره موبایل وارد شو' if fa else 'Sign in with your mobile' }}</span>
+        <button class="btn btn-primary btn-block" type="button" data-open-login>{{ 'ورود / ثبت‌نام' if fa else 'Sign in' }}</button>
+      </div>
+    {% endif %}
+  </div>
+</aside>
+<div class="sb-scrim" id="sbScrim"></div>

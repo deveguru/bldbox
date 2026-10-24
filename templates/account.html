@@ -147,7 +147,18 @@
       </div>
     </div>
 
-    <details class="acc-edit" {{ 'open' if saved in ('profile', 'avatar') }}>
+    {% set cover = cover_url(user) %}
+    <div class="acc-cover banner-{{ profile.banner }}"{% if cover %} style="background-image:url('{{ cover }}')"{% endif %}>
+      <form method="post" action="/account/cover" enctype="multipart/form-data" class="acc-cover-actions">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <label class="btn btn-sm">🖼 {{ ('تغییر کاور' if cover else 'افزودن کاور پروفایل') if lang == 'fa' else ('Change cover' if cover else 'Add cover') }}
+          <input type="file" name="cover" accept="image/*" hidden onchange="this.form.submit()"></label>
+        {% if cover %}<button class="btn btn-sm btn-ghost" name="action" value="remove">{{ 'حذف کاور' if lang == 'fa' else 'Remove' }}</button>{% endif %}
+      </form>
+      <span class="tiny acc-cover-hint">{{ 'پیشنهاد: ۱۵۰۰×۵۰۰ پیکسل' if lang == 'fa' else 'Recommended 1500×500' }}</span>
+    </div>
+
+    <details class="acc-edit" {{ 'open' if saved in ('profile', 'avatar', 'cover') }}>
       <summary>✎ {{ 'ویرایش و شخصی‌سازی پروفایل' if lang == 'fa' else 'Edit & customise profile' }}</summary>
       <form method="post" action="/account/profile">
         <input type="hidden" name="csrf" value="{{ csrf }}">

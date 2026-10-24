@@ -13,6 +13,28 @@
   const titleEl = $('#chatTitle');
   const micBtn = $('#micBtn');
   const LOGO = window.__LOGO || '';
+  const GUEST = !!window.__GUEST;
+  const chatMain = $('#chatMain');
+  const NOTE = statusLine ? statusLine.textContent : '';
+
+  /* ---------- guest store: conversations live only in this browser ---------- */
+  const GS = {
+    KEY: 'bb_guest_chats_v1',
+    all() { try { return JSON.parse(localStorage.getItem(this.KEY) || '[]'); } catch (e) { return []; } },
+    save(list) { try { localStorage.setItem(this.KEY, JSON.stringify(list.slice(0, 50))); } catch (e) {} },
+    get(id) { return this.all().find(c => c.id === id); },
+    create(title) {
+      const c = { id: 'g_' + Math.random().toString(36).slice(2, 10), title: (title || '').slice(0, 60), messages: [], t: Date.now() };
+      this.save([c, ...this.all()]); return c;
+    },
+    push(id, role, content) {
+      const list = this.all(); const c = list.find(x => x.id === id);
+      if (!c) return;
+      c.messages.push({ role, content }); c.t = Date.now();
+      this.save([c, ...list.filter(x => x.id !== id)]);
+    },
+    remove(id) { this.save(this.all().filter(c => c.id !== id)); },
+  };
 
   let convId = window.__CONV || null;
   let busy = false;
@@ -39,6 +61,7 @@
     d.textContent = text || '';
     return d.innerHTML.replace(/\n/g, '<br>');
   }
+  function highlight(el) { if (window.BB && BB.enhanceCode) BB.enhanceCode(el); }
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
       ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -55,8 +78,7 @@
     if (force || near) messagesEl.scrollTop = messagesEl.scrollHeight;
   }
   function removeWelcome() {
-    const w = document.getElementById('welcome');
-    if (w) w.remove();
+    if (chatMain) chatMain.classList.remove('is-empty');
   }
 
   /* ---------- message rendering ---------- */
@@ -71,9 +93,9 @@
     removeWelcome();
     const wrap = document.createElement('div');
     wrap.className = 'msg user';
-    wrap.innerHTML = `<div class="who">${esc((window.__USERNAME || 'U')[0].toUpperCase())}</div>
-      <div class="bubble"><div class="content"></div></div>`;
+    wrap.innerHTML = `<div class="bubble"><div class="content"></div></div>`;
     wrap.querySelector('.content').innerHTML = md(text);
+    highlight(wrap);
     messagesEl.appendChild(wrap);
     scrollBottom(true);
   }
@@ -154,10 +176,18 @@
       const i = document.createElement('img'); i.src = url; body.appendChild(i);
     } else {
       const fr = document.createElement('iframe');
-      fr.src = url;
-      fr.loading = 'lazy';
-      fr.setAttribute('sandbox', 'allow-scripts allow-forms allow-popups');
+      // No allow-same-origin: the page runs in an opaque origin and cannot touch the app.
+      fr.setAttribute('sandbox', 'allow-scripts allow-forms allow-popups allow-modals');
       body.appendChild(fr);
+      if (kind === 'html') {
+        // srcdoc avoids framing headers (X-Frame-Options / frame-ancestors) entirely
+        fetch(url, { credentials: 'same-origin' })
+          .then(r => { if (!r.ok) throw new Error(r.status); return r.text(); })
+          .then(html => { fr.srcdoc = html; })
+          .catch(() => { fr.src = url; });
+      } else {
+        fr.src = url;
+      }
     }
   }
 
@@ -208,40 +238,48 @@
         if (!raf) { last = 0; raf = requestAnimationFrame(tick); }
         return new Promise(resolve => {
           const wait = () => {
-            if (shown >= target.length) { contentEl.innerHTML = md(target); resolve(); }
+            if (shown >= target.length) { contentEl.innerHTML = md(target); highlight(contentEl); resolve(); }
             else setTimeout(wait, 40);
           };
           wait();
         });
       },
       get text() { return target; },
-      flush() { shown = target.length; done = true; contentEl.innerHTML = md(target); if (raf) cancelAnimationFrame(raf); raf = null; }
+      flush() { shown = target.length; done = true; contentEl.innerHTML = md(target); highlight(contentEl); if (raf) cancelAnimationFrame(raf); raf = null; }
     };
   }
 
-  function toolChip(name, status) {
-    let chip = toolStrip.querySelector(`[data-tool="${CSS.escape(name)}"]`);
+  // Progress chip: shows only a friendly label (e.g. "در حال ساخت تصویر"), never a tool name.
+  function toolChip(id, label, status) {
+    let chip = toolStrip.querySelector(`[data-tool="${CSS.escape(id)}"]`);
     if (!chip) {
       chip = document.createElement('span');
       chip.className = 'tool-chip';
-      chip.dataset.tool = name;
+      chip.dataset.tool = id;
       chip.innerHTML = `<span class="dot"></span><span class="tname"></span>`;
       toolStrip.appendChild(chip);
     }
     chip.classList.remove('running', 'ok', 'error');
     chip.classList.add(status === 'running' ? 'running' : status);
-    chip.querySelector('.tname').textContent = name + (status === 'running' ? ' …' : '');
+    chip.querySelector('.tname').textContent = label + (status === 'running' ? ' …' : '');
     if (status !== 'running') setTimeout(() => chip.remove(), 7000);
   }
 
   /* ---------- send ---------- */
   async function ensureConv() {
     if (convId) return true;
+    if (GUEST) {
+      const c = GS.create(input.value.trim());
+      convId = c.id;
+      history.replaceState({}, '', '/?c=' + convId);
+      refreshSidebar();
+      return true;
+    }
     const r = await fetch('/api/conversations', { method: 'POST', headers: { 'X-CSRF-Token': CSRF } });
     const j = await r.json();
     if (!j.id) { toast(TXT.noKey, 'err'); return false; }
     convId = j.id;
-    history.replaceState({}, '', '/chat?c=' + convId);
+    history.replaceState({}, '', '/?c=' + convId);
     addConvToSidebar(convId);
     return true;
   }
@@ -272,11 +310,26 @@
     let finalText = '';
 
     try {
-      const resp = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF },
-        body: JSON.stringify({ conversation_id: convId, message: text, web_search: webOn })
-      });
+      let resp;
+      if (GUEST) {
+        GS.push(convId, 'user', text);
+        resp = await fetch('/api/guest/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF },
+          body: JSON.stringify({ messages: (GS.get(convId) || { messages: [] }).messages })
+        });
+        if (resp.status === 429 || resp.status === 401) {
+          const j = await resp.json().catch(() => ({}));
+          if (window.BB && BB.openLogin) BB.openLogin();
+          throw new Error(j.message || 'login');
+        }
+      } else {
+        resp = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF },
+          body: JSON.stringify({ conversation_id: convId, message: text, web_search: webOn })
+        });
+      }
       if (resp.status === 402) { window.location.href = '/pricing?need=1'; return ''; }
       if (!resp.ok) {
         let msg = 'HTTP ' + resp.status;
@@ -302,12 +355,12 @@
           try { ev = JSON.parse(payload); } catch (e) { continue; }
           if (ev.type === 'start' && ev.conversation_id) {
             convId = ev.conversation_id;
-            history.replaceState({}, '', '/chat?c=' + convId);
+            history.replaceState({}, '', '/?c=' + convId);
           } else if (ev.type === 'text') {
             tw.push(ev.text);
           } else if (ev.type === 'tool') {
-            toolChip(ev.name, ev.status);
-            if (ev.status === 'running') statusLine.textContent = ev.name + ' …';
+            toolChip(ev.id || ev.label, ev.label || TXT.thinking, ev.status);
+            if (ev.status === 'running') statusLine.textContent = (ev.label || TXT.thinking) + ' …';
           } else if (ev.type === 'files') {
             (ev.files || []).forEach(f => filesEl.appendChild(fileCard(f)));
             scrollBottom();
@@ -315,8 +368,6 @@
             (ev.files || []).forEach(f => {
               if (!filesEl.querySelector(`a[href="${CSS.escape(f.url)}"]`)) filesEl.appendChild(fileCard(f));
             });
-            if (ev.tools && ev.tools.length) statusLine.textContent =
-              (L === 'fa' ? 'ابزارها: ' : 'Tools: ') + [...new Set(ev.tools)].join(', ');
             finalText = ev.content || tw.text;
             await tw.finish(finalText);
           } else if (ev.type === 'error') {
@@ -327,6 +378,7 @@
       }
       if (!tw.text) { tw.flush(); contentEl.innerHTML = `<span class="muted">${TXT.error}</span>`; }
       await tw.finish();
+      if (GUEST && (finalText || tw.text)) GS.push(convId, 'assistant', finalText || tw.text);
       refreshSidebar();
     } catch (e) {
       contentEl.innerHTML = `<div class="alert">${esc(e.message || String(e))}</div>`;
@@ -334,7 +386,7 @@
       bubble.classList.remove('streaming');
       busy = false;
       sendBtn.disabled = false;
-      statusLine.textContent = TXT.ready;
+      statusLine.textContent = NOTE;
       toolStrip.innerHTML = '';
       scrollBottom();
       if (!V.mode) input.focus();
@@ -580,14 +632,29 @@
     el.className = 'conv-item active';
     el.dataset.id = id;
     el.innerHTML = `<span class="conv-dot"></span>
-      <a class="title" href="/chat?c=${id}">${L === 'fa' ? 'گفتگوی جدید' : 'New chat'}</a>
+      <a class="title" href="/?c=${id}">${L === 'fa' ? 'گفتگوی جدید' : 'New chat'}</a>
       <button class="del" data-del="${id}">✕</button>`;
     list.prepend(el);
     bindDelete(el);
     titleEl.textContent = L === 'fa' ? 'گفتگوی جدید' : 'New chat';
   }
 
+  function renderGuestSidebar() {
+    const list = $('#convList');
+    list.innerHTML = '';
+    GS.all().forEach(c => {
+      const el = document.createElement('div');
+      el.className = 'conv-item' + (c.id === convId ? ' active' : '');
+      el.dataset.id = c.id;
+      el.innerHTML = `<a class="title" href="/?c=${c.id}">${esc(c.title || (L === 'fa' ? 'گفتگوی جدید' : 'New chat'))}</a>
+        <button class="del" data-del="${c.id}">✕</button>`;
+      list.appendChild(el);
+      bindDelete(el);
+    });
+  }
+
   async function refreshSidebar() {
+    if (GUEST) { renderGuestSidebar(); return; }
     try {
       const r = await fetch('/api/conversations');
       const j = await r.json();
@@ -598,7 +665,7 @@
         el.className = 'conv-item' + (c.id === convId ? ' active' : '');
         el.dataset.id = c.id;
         el.innerHTML = `<span class="conv-dot"></span>
-          <a class="title" href="/chat?c=${c.id}">${esc(c.title || 'New chat')}</a>
+          <a class="title" href="/?c=${c.id}">${esc(c.title || 'New chat')}</a>
           <button class="del" data-del="${c.id}">✕</button>`;
         list.appendChild(el);
         bindDelete(el);
@@ -613,16 +680,14 @@
       e.stopPropagation();
       const id = b.dataset.del;
       if (!confirm(window.__T.confirm_delete)) return;
-      await fetch('/api/conversations/' + id, { method: 'DELETE', headers: { 'X-CSRF-Token': CSRF } });
-      if (id === convId) window.location.href = '/chat';
+      if (GUEST) GS.remove(id);
+      else await fetch('/api/conversations/' + id, { method: 'DELETE', headers: { 'X-CSRF-Token': CSRF } });
+      if (id === convId) window.location.href = '/';
       else el.remove();
     });
   }
   document.querySelectorAll('.conv-item').forEach(bindDelete);
 
-  $('#newChat').addEventListener('click', () => { window.location.href = '/chat'; });
-  const menuBtn = $('#menuBtn');
-  if (menuBtn) menuBtn.addEventListener('click', () => $('#sidebar').classList.toggle('open'));
 
   /* ---------- composer ---------- */
   function autoGrow() {
@@ -706,10 +771,41 @@
     el._t = setTimeout(() => { el.className = 'toast'; }, 3200);
   }
 
+  document.querySelectorAll('.files-row[data-files]').forEach(row => {
+    try { JSON.parse(row.dataset.files || '[]').forEach(f => row.appendChild(fileCard(f))); } catch (e) {}
+  });
+
   document.querySelectorAll('.content.raw').forEach(el => {
     const raw = el.dataset.raw;
     if (raw) el.innerHTML = md(raw);
   });
+
+  /* ---------- guest: restore a browser-stored conversation ---------- */
+  if (GUEST) {
+    const cid = new URLSearchParams(location.search).get('c');
+    const c = cid && GS.get(cid);
+    if (c) {
+      convId = c.id;
+      c.messages.forEach(m => {
+        if (m.role === 'user') addUserMessage(m.content);
+        else {
+          const w = addAssistantMessage();
+          w.querySelector('.content').innerHTML = md(m.content);
+          highlight(w);
+        }
+      });
+    }
+    renderGuestSidebar();
+  }
+
+  /* ---------- ?mode= shortcuts from the sidebar tools ---------- */
+  const mode = new URLSearchParams(location.search).get('mode');
+  if (mode === 'image' && !GUEST) {
+    input.value = L === 'fa' ? 'یک تصویر بساز از: ' : 'Create an image of: ';
+    input.focus(); autoGrow();
+  } else if (mode === 'voice' && !GUEST && typeof startListening === 'function') {
+    setTimeout(() => startListening('talk'), 300);
+  }
 
   window.__USERNAME = window.__USERNAME || 'U';
   autoGrow();

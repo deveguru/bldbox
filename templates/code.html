@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}{{ (project.title ~ ' · ') if project else '' }}{{ settings.code_name or 'BldBox Code' }}{% endblock %}
+{% block header %}{% endblock %}
+{% block footer %}{% endblock %}
+{% block head_extra %}<link rel="stylesheet" href="/static/css/shell.css?v=20261025"><link rel="stylesheet" href="/static/css/code.css?v=20261025">{% endblock %}
+{% block body %}
+{% set fa = lang == 'fa' %}
+{% set guest = False %}
+{% set conversations = [] %}
+{% set conv = None %}
+<div class="app">
+  {% include '_sidebar.html' %}
+  <main class="cx {{ 'is-new' if not project }}" id="codeMain">
+    <section class="cx-chat">
+      <header class="cx-head">
+        <button class="sb-icon" id="menuBtn" type="button" aria-label="menu">☰</button>
+        <span class="cx-badge">&lt;/&gt;</span>
+        <select class="cx-proj" id="projSelect" aria-label="project">
+          <option value="">{{ '+ پروژه جدید' if fa else '+ New project' }}</option>
+          {% for p in projects %}<option value="{{ p.id }}" {{ 'selected' if project and project.id == p.id }}>{{ p.title }}</option>{% endfor %}
+        </select>
+        {% if project %}<button class="sb-icon cx-del" id="projDelete" type="button" title="{{ 'حذف پروژه' if fa else 'Delete project' }}">🗑</button>{% endif %}
+      </header>
+
+      <div class="cx-msgs" id="cxMsgs">
+        {% for m in code_messages %}
+          <div class="cxm {{ m.role }}"><div class="cxm-body raw" data-raw="{{ m.content|e }}">{{ m.content }}</div>
+            {% if m.files %}<div class="cxm-files">{% for f in m.files[:40] %}<span class="fchip" data-open="{{ f }}">{{ f }}</span>{% endfor %}</div>{% endif %}
+          </div>
+        {% endfor %}
+        <div class="cx-intro" id="cxIntro">
+          <h2>{{ settings.code_name or 'BldBox Code' }}</h2>
+          <p>{{ 'بگو چه برنامه‌ای بسازم؛ کامل می‌نویسمش.' if fa else 'Describe an app — I will build all of it.' }}</p>
+          <div class="cx-chips">
+            {% for ex in (['یک فروشگاه اینترنتی با React و پنل مدیریت Node.js', 'لندینگ‌پیج شرکت نرم‌افزاری با انیمیشن', 'اپ مدیریت کارها با FastAPI و فرانت Vue'] if fa else ['Online shop: React + Node.js admin', 'Animated software-company landing page', 'Task manager: FastAPI + Vue']) %}
+              <button class="chip" type="button" data-fill="{{ ex }}">{{ ex }}</button>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div class="cx-status" id="cxStatus" hidden><span class="spin"></span><span id="cxStatusText"></span></div>
+      <div class="cx-composer">
+        <textarea id="cxInput" rows="2" dir="auto" placeholder="{{ 'برنامه‌ات را توضیح بده یا تغییری بخواه…' if fa else 'Describe your app or ask for a change…' }}"></textarea>
+        <button class="send" id="cxSend" type="button" aria-label="send">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg></button>
+      </div>
+    </section>
+
+    <section class="cx-work">
+      <div class="cx-bar">
+        <div class="cx-tabs">
+          <button class="cx-tab on" data-tab="preview" type="button">{{ 'پیش‌نمایش' if fa else 'Preview' }}</button>
+          <button class="cx-tab" data-tab="code" type="button">{{ 'کد' if fa else 'Code' }}</button>
+        </div>
+        <span class="spacer"></span>
+        <button class="cx-btn" id="cxRefresh" type="button" title="{{ 'بارگذاری مجدد' if fa else 'Reload' }}">↻</button>
+        <button class="cx-btn" id="cxOpen" type="button" title="{{ 'باز کردن در تب جدید' if fa else 'Open in new tab' }}">↗</button>
+        <button class="cx-btn wide" id="cxZip" type="button">⬇ {{ 'دانلود ZIP' if fa else 'Download ZIP' }}</button>
+      </div>
+      <div class="cx-pane" id="paneView">
+        <iframe id="cxFrame" sandbox="allow-scripts allow-forms allow-popups allow-modals" title="preview"></iframe>
+        <div class="cx-empty" id="cxEmpty">{{ 'پیش‌نمایش اینجا نمایش داده می‌شود' if fa else 'Your preview appears here' }}</div>
+      </div>
+      <div class="cx-pane cx-code" id="paneCode" hidden>
+        <aside class="cx-tree" id="cxTree"></aside>
+        <div class="cx-file"><div class="cx-fname" id="cxFname"></div><div id="cxViewer"></div></div>
+      </div>
+    </section>
+  </main>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="/static/vendor/marked.min.js"></script>
+<script src="/static/vendor/purify.min.js"></script>
+<script src="/static/vendor/highlight.min.js"></script>
+<script>
+  window.__GUEST = false;
+  window.__CODE = { pid: {{ (project.id if project else '')|tojson }}, token: {{ raw_token|tojson }} };
+</script>
+<script src="/static/js/shell.js?v=20261025"></script>
+<script src="/static/js/code.js?v=20261025"></script>
+{% endblock %}
