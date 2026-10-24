@@ -1,34 +1,61 @@
 {% extends "base.html" %}
 {% block title %}{{ conv.title if conv else settings.site_name }}{% endblock %}
 {% block header %}{% endblock %}
-{% block head_extra %}<link rel="stylesheet" href="/static/css/shell.css?v=20261025">{% endblock %}
+{% block head_extra %}<link rel="stylesheet" href="/static/css/shell.css?v=20261024n">{% endblock %}
 {% block footer %}{% endblock %}
 {% block body %}
 {% set fa = lang == 'fa' %}
 {% set ai_img = ('/static/uploads/ai-avatar.png?v=' ~ settings.ai_avatar_version) if settings.ai_avatar_version else (('/static/uploads/logo.png?v=' ~ settings.logo_version) if settings.logo_version else '') %}
+{% macro actions(role, last=False, model='') %}
+  <div class="msg-actions {{ 'last' if last }}">
+    <button class="ma" type="button" data-act="copy" title="{{ 'کپی' if fa else 'Copy' }}">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+    {% if role == 'assistant' %}
+    <button class="ma retry" type="button" data-act="retry" title="{{ 'تلاش مجدد' if fa else 'Retry' }}">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg></button>
+    <span class="ma-model">{{ model }}</span>
+    {% endif %}
+  </div>
+{% endmacro %}
 <div class="app">
   {% include '_sidebar.html' %}
 
   <main class="cm {{ 'is-empty' if not messages }}" id="chatMain">
     <header class="cm-top">
       <button class="sb-icon" id="menuBtn" type="button" aria-label="menu">☰</button>
-      <div class="cm-model"><span class="live-dot"></span>{{ settings.model_label }}</div>
+      <div class="mp" id="modelPicker">
+        <button class="cm-model" type="button" id="modelBtn" {% if guest %}data-need-login{% endif %} aria-haspopup="listbox">
+          <span class="mp-ico" id="modelIco"><span class="live-dot"></span></span>
+          <span id="modelName">{{ settings.model_label }}</span>
+          {% if not guest and settings.user_model_choice == '1' %}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg>{% endif %}
+        </button>
+        <div class="mp-menu" id="modelMenu" role="listbox" hidden></div>
+      </div>
       <span class="spacer"></span>
       {% if guest %}<button class="btn btn-sm btn-primary" type="button" data-open-login>{{ 'ورود' if fa else 'Sign in' }}</button>{% endif %}
     </header>
 
     <div class="messages" id="messages">
+      {% set last_ai = namespace(i=-1) %}
+      {% for m in messages %}{% if m.role == 'assistant' %}{% set last_ai.i = loop.index0 %}{% endif %}{% endfor %}
       {% for m in messages %}
         {% set meta = (m.meta|fromjson) if m.meta else {} %}
-        <div class="msg {{ m.role }}">
-          {% if m.role == 'assistant' %}
-            <div class="who logo-who">{% if ai_img %}<img src="{{ ai_img }}" alt="AI">{% else %}<span>✦</span>{% endif %}</div>
-          {% endif %}
-          <div class="bubble">
-            <div class="content raw" data-raw="{{ m.content|e }}">{{ m.content }}</div>
-            {% if meta.files %}<div class="files-row" data-files="{{ meta.files|tojson|forceescape }}"></div>{% endif %}
+        {% if m.role == 'user' %}
+          <div class="msg user">
+            {% if meta.attachments %}<div class="msg-atts" data-atts="{{ meta.attachments|tojson|forceescape }}"></div>{% endif %}
+            {% if m.content %}<div class="bubble"><div class="content raw" data-raw="{{ m.content|e }}">{{ m.content }}</div></div>{% endif %}
+            {{ actions('user') }}
           </div>
-        </div>
+        {% elif m.role == 'assistant' %}
+          <div class="msg assistant">
+            <div class="ai-head"><div class="who logo-who">{% if ai_img %}<img src="{{ ai_img }}" alt="AI">{% else %}<span>✦</span>{% endif %}</div></div>
+            <div class="bubble">
+              <div class="content raw" data-raw="{{ m.content|e }}">{{ m.content }}</div>
+              {% if meta.files %}<div class="files-row" data-files="{{ meta.files|tojson|forceescape }}"></div>{% endif %}
+            </div>
+            {{ actions('assistant', loop.index0 == last_ai.i, model_names.get(meta.model, '') if meta.model else '') }}
+          </div>
+        {% endif %}
       {% endfor %}
     </div>
 
@@ -40,7 +67,6 @@
     <div class="tool-strip" id="toolStrip"></div>
 
     <div class="composer-wrap">
-      <div class="attach-list" id="attachList"></div>
       <div class="voice-live" id="voiceLive" hidden>
         <div class="vl-head">
           <span class="vl-wave"><i></i><i></i><i></i><i></i><i></i></span>
@@ -55,11 +81,12 @@
         <div class="vl-silence"><i id="vlBar"></i></div>
       </div>
       <div class="composer">
+        <div class="attach-list" id="attachList"></div>
         <textarea id="input" rows="1" dir="auto" placeholder="{{ 'هر چیزی بپرس…' if fa else 'Ask anything…' }}"></textarea>
         <div class="composer-bar">
-          <button class="icon-btn" id="attachBtn" type="button" title="{{ t('attach') }}" {% if guest %}data-need-login{% endif %}>
+          <button class="icon-btn" id="attachBtn" type="button" title="{{ 'افزودن تصویر یا فایل' if fa else 'Add images or files' }}" {% if guest %}data-need-login{% endif %}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
-          <input type="file" id="fileInput" hidden multiple>
+          <input type="file" id="fileInput" hidden multiple accept="image/*,application/pdf,.txt,.md,.csv,.json,.docx,.xlsx,.pptx,.zip,audio/*,video/*,.py,.js,.html,.css">
           {% if settings.enable_web_search == '1' %}
           <button class="icon-btn web-toggle pill" id="webBtn" type="button" aria-pressed="false" {% if guest %}data-need-login{% endif %}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18z"/></svg>
@@ -96,7 +123,8 @@
   window.__VOICE_SILENCE = {{ (settings.voice_silence_seconds or 3)|int }};
   window.__VOICE_LANG = {{ (settings.voice_lang or 'fa-IR')|tojson }};
   window.__LOGO = {{ ai_img|tojson }};
+  window.__MODEL_CHOICE = {{ 'true' if (not guest and settings.user_model_choice == '1') else 'false' }};
 </script>
-<script src="/static/js/shell.js?v=20261025"></script>
-<script src="/static/js/chat.js?v=20261025"></script>
+<script src="/static/js/shell.js?v=20261024n"></script>
+<script src="/static/js/chat.js?v=20261024n"></script>
 {% endblock %}

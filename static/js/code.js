@@ -222,6 +222,7 @@
           let ev; try { ev = JSON.parse(p); } catch (e) { continue; }
           if (ev.type === 'status') status(`${T.step} ${ev.step} ${T.of} ${ev.max}`);
           else if (ev.type === 'note') { runBox = addMsg('assistant', ev.text); }
+          else if (ev.type === 'plan') { addMsg('assistant', (fa ? '🧭 **نقشه کار:** ' : '🧭 **Plan:** ') + ev.text); }
           else if (ev.type === 'file') {
             if (!runBox) runBox = addMsg('assistant', '');
             if (ev.op === 'write') fileChip(runBox.querySelector('.cxm-files'), ev.path);

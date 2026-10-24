@@ -28,12 +28,13 @@ body.page-chat,body.page-code{background:var(--s-bg);overflow:hidden}
 .sb-ti.voice{background:linear-gradient(135deg,#ff7a18,#ED1908);color:#fff;font-size:12px}
 .sb-label{font-size:11.5px;color:var(--s-dim);padding:12px 10px 4px}
 .sb-list{flex:1;overflow-y:auto;min-height:0;padding-bottom:8px}
-.sb-list .conv-item{display:flex;align-items:center;border-radius:10px;position:relative}
-.sb-list .conv-item .title{flex:1;min-width:0;padding:8px 10px;color:var(--s-muted);font-size:13.4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-list .conv-item{display:flex;align-items:center;gap:0;padding:0 2px;border:0;border-radius:9px;position:relative;min-height:0}
+.sb-list .conv-item .title{flex:1;min-width:0;padding:5px 10px;color:var(--s-muted);font-size:13px;line-height:1.55;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sb-list .conv-item:hover{background:var(--s-panel)}
 .sb-list .conv-item:hover .title,.sb-list .conv-item.active .title{color:var(--s-text)}
 .sb-list .conv-item.active{background:var(--s-panel2)}
-.sb-list .conv-item .del{opacity:0;border:0;background:none;color:var(--s-dim);cursor:pointer;padding:6px 8px;font-size:11px}
+.sb-list .conv-item{margin-bottom:1px}
+.sb-list .conv-item .del{opacity:0;border:0;background:none;color:var(--s-dim);cursor:pointer;padding:3px 8px;font-size:11px}
 .sb-list .conv-item:hover .del{opacity:1}
 .sb-list .conv-item .del:hover{color:#ff6b5e}
 .sb-foot{border-top:1px solid var(--s-line);padding:10px 2px 12px}
@@ -66,24 +67,66 @@ body.page-chat,body.page-code{background:var(--s-bg);overflow:hidden}
 .cm .tool-strip{max-width:780px;width:100%;margin:0 auto;padding:0 16px}
 
 /* messages: user on the right, AI on the left (independent of page direction) */
-.cm .msg{display:flex;gap:12px;align-items:flex-start;animation:none}
-.cm .msg.user{flex-direction:row;justify-content:flex-start}
-[dir=ltr] .cm .msg.user{justify-content:flex-end}
+.cm .msg{display:flex;flex-direction:column;gap:6px;animation:none}
+.cm .msg.user{align-items:flex-start}
+[dir=ltr] .cm .msg.user{align-items:flex-end}
 .cm .msg.user .bubble{max-width:78%;background:var(--s-panel2);border:0;border-radius:22px;padding:10px 16px;box-shadow:none}
-.cm .msg.assistant{direction:ltr}
-.cm .msg.assistant .bubble{direction:rtl;flex:1;min-width:0;background:none;border:0;padding:2px 0 0;box-shadow:none;text-align:start}
+/* AI: avatar row on top, then the message in its own panel */
+.cm .msg.assistant{direction:ltr;align-items:flex-start}
+.cm .msg.assistant .ai-head{display:flex;align-items:center;gap:8px;padding-inline-start:2px}
+.cm .msg.assistant .bubble{direction:rtl;width:100%;min-width:0;background:var(--s-panel);border:1px solid var(--s-line);
+  border-radius:20px;border-top-left-radius:6px;padding:12px 18px;box-shadow:0 6px 24px rgba(0,0,0,.18);text-align:start}
 [dir=ltr] .cm .msg.assistant .bubble{direction:ltr}
 .cm .msg .content{font-size:15.5px;line-height:1.95}
 .cm .msg .content [dir=auto]{text-align:start;unicode-bidi:plaintext}
 .cm .msg .content ul,.cm .msg .content ol{padding-inline-start:1.4em}
 .cm .msg .content p{margin:0 0 .7em}
 .cm .msg .content p:last-child{margin-bottom:0}
+.cm .msg .files-row:empty{display:none}
 
-/* circular AI avatar, no background; spins while writing */
-.cm .who.logo-who,.who.logo-who{width:30px;height:30px;flex:none;border-radius:50%;overflow:hidden;background:none!important;
-  border:0!important;box-shadow:none!important;display:grid;place-items:center;color:var(--s-acc2);font-size:16px;margin-top:2px}
-.who.logo-who img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;background:none}
-.msg.assistant.streaming .logo-who{box-shadow:0 0 0 2px rgba(178,102,255,.5),0 0 18px rgba(155,48,255,.55)!important}
+/* circular AI avatar, no background at all; spins while writing */
+.cm .who.logo-who,.who.logo-who{width:30px;height:30px;flex:none;border-radius:50%;overflow:hidden;background:transparent!important;
+  border:0!important;box-shadow:none!important;outline:0;display:grid;place-items:center;color:var(--s-acc2);font-size:17px;margin:0;padding:0}
+.who.logo-who img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;background:transparent}
+.msg.assistant.streaming .logo-who{filter:drop-shadow(0 0 8px rgba(155,48,255,.65))}
+
+/* message actions: copy / retry */
+.msg-actions{display:flex;align-items:center;gap:2px;opacity:0;transition:opacity .15s;min-height:28px}
+.cm .msg:hover .msg-actions,.msg-actions.last,.msg-actions:focus-within{opacity:1}
+.msg.assistant.streaming .msg-actions{opacity:0!important;pointer-events:none}
+.msg.assistant .msg-actions{padding-inline-start:4px}
+.msg-actions .ma{width:30px;height:28px;border:0;border-radius:8px;background:none;color:var(--s-dim);cursor:pointer;display:grid;place-items:center}
+.msg-actions .ma:hover{background:var(--s-panel2);color:var(--s-text)}
+.msg-actions .ma.done{color:#3ee6a0}
+.msg-actions .retry{display:none}
+.msg-actions.last .retry{display:grid}
+.msg-actions .ma-model{font-size:11px;color:var(--s-dim);padding-inline-start:6px}
+@media (hover:none){.msg-actions{opacity:1}}
+
+/* attachments shown in a sent message */
+.msg-atts{display:flex;flex-wrap:wrap;gap:6px;max-width:78%}
+[dir=rtl] .msg-atts{justify-content:flex-start}
+.msg-atts img{width:118px;height:118px;object-fit:cover;border-radius:14px;border:1px solid var(--s-line2);cursor:zoom-in;background:var(--s-panel)}
+.msg-atts .att-chip{font-size:12.5px;padding:6px 10px;border-radius:10px;background:var(--s-panel2);color:var(--s-text)}
+
+/* model picker (top bar) */
+.mp{position:relative}
+.cm-model{border:0;background:none;cursor:pointer;font:inherit}
+.cm-model:hover{background:var(--s-panel)}
+.mp-ico{width:22px;height:22px;border-radius:50%;overflow:hidden;display:grid;place-items:center;flex:none}
+.mp-ico img{width:100%;height:100%;object-fit:cover}
+.mp-ph{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--s-acc),#4A0099)}
+.mp-menu{position:absolute;top:46px;inset-inline-start:0;z-index:30;width:min(330px,88vw);max-height:62vh;overflow:auto;padding:6px;border-radius:16px;
+  background:#15121f;border:1px solid var(--s-line2);box-shadow:0 20px 60px rgba(0,0,0,.55)}
+.mp-item{display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;border:0;border-radius:11px;background:none;color:var(--s-text);cursor:pointer;text-align:start;font:inherit}
+.mp-item:hover{background:var(--s-panel2)}
+.mp-item.on{background:rgba(155,48,255,.14)}
+.mp-item.locked{opacity:.6}
+.mp-txt{display:flex;flex-direction:column;min-width:0;flex:1}
+.mp-txt b{font-size:13.6px;font-weight:600}
+.mp-txt small{font-size:11.5px;color:var(--s-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mp-check{color:var(--s-acc2)}
+.mp-lock{font-size:10.5px;padding:2px 7px;border-radius:999px;border:1px solid rgba(178,102,255,.4);color:var(--s-acc2)}
 
 /* composer */
 .cm .composer-wrap{width:100%;max-width:812px;margin:0 auto;padding:0 16px 10px;background:none;border:0}
@@ -92,6 +135,17 @@ body.page-chat,body.page-code{background:var(--s-bg);overflow:hidden}
 .cm .composer:focus-within{border-color:rgba(155,48,255,.55);box-shadow:0 10px 40px rgba(0,0,0,.35),0 0 0 3px rgba(155,48,255,.12)}
 .cm .composer textarea{width:100%;border:0;outline:0;background:none;resize:none;font-size:15.5px;line-height:1.7;max-height:220px;padding:2px 6px;color:var(--s-text)}
 .composer-bar{display:flex;align-items:center;gap:4px}
+.cm .attach-list{display:none;gap:8px;flex-wrap:wrap;padding:2px 4px 4px;margin:0;max-width:none}
+.cm .attach-list.has{display:flex}
+.cm .att{position:relative;width:64px;height:64px;border-radius:14px;overflow:hidden;background:var(--s-panel2);border:1px solid var(--s-line2)}
+.cm .att img{width:100%;height:100%;object-fit:cover}
+.cm .att-file{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:2px;font-size:18px;padding:4px}
+.cm .att-file small{font-size:9.5px;color:var(--s-muted);max-width:58px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cm .att.busy::after{content:"";position:absolute;inset:0;background:rgba(10,9,16,.55) linear-gradient(90deg,transparent,rgba(178,102,255,.35),transparent);
+  background-size:200% 100%;animation:attLoad 1.1s linear infinite}
+@keyframes attLoad{from{background-position:200% 0}to{background-position:-200% 0}}
+.cm .att-x{position:absolute;top:3px;inset-inline-end:3px;width:20px;height:20px;border-radius:50%;border:0;background:rgba(0,0,0,.65);color:#fff;font-size:10px;cursor:pointer;z-index:2}
+.cm .composer.drag{border-color:rgba(0,229,255,.6)}
 .composer-bar .spacer{flex:1}
 .cm .composer .icon-btn{width:36px;height:36px;border-radius:50%;border:1px solid transparent;background:none;color:var(--s-muted);cursor:pointer;display:grid;place-items:center}
 .cm .composer .icon-btn:hover{background:var(--s-panel2);color:var(--s-text)}

@@ -52,6 +52,11 @@
     preview: L === 'fa' ? 'پیش‌نمایش' : 'Preview',
     close: L === 'fa' ? 'بستن' : 'Close',
     stop: L === 'fa' ? 'توقف' : 'Stop',
+    copied: L === 'fa' ? 'کپی شد' : 'Copied',
+    copy: L === 'fa' ? 'کپی' : 'Copy',
+    retry: L === 'fa' ? 'تلاش مجدد' : 'Retry',
+    auto: L === 'fa' ? 'انتخاب خودکار بهترین مدل' : 'Best model, chosen automatically',
+    premium: L === 'fa' ? 'پلن حرفه‌ای' : 'Pro plan',
   };
 
   /* ---------- markdown helpers ---------- */
@@ -82,22 +87,58 @@
   }
 
   /* ---------- message rendering ---------- */
-  const AI_AVATAR = `<div class="who logo-who"><img src="${esc(LOGO)}" alt="AI"></div>`;
-  const AI_AVATAR_FALLBACK = `<div class="who logo-who"><span>✦</span></div>`;
+  const ICON_COPY = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+  const ICON_RETRY = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>';
+  const ICON_OK = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
 
   function avatarHtml() {
-    return LOGO ? AI_AVATAR : AI_AVATAR_FALLBACK;
+    // circular AI avatar, no background, sits directly above the AI message
+    return `<div class="ai-head"><div class="who logo-who">${LOGO ? `<img src="${esc(LOGO)}" alt="AI">` : '<span>✦</span>'}</div></div>`;
+  }
+  function actionsHtml(role) {
+    return `<div class="msg-actions">
+      <button class="ma" type="button" data-act="copy" title="${TXT.copy}">${ICON_COPY}</button>
+      ${role === 'assistant' ? `<button class="ma retry" type="button" data-act="retry" title="${TXT.retry}">${ICON_RETRY}</button><span class="ma-model"></span>` : ''}
+    </div>`;
+  }
+  function markLastAssistant() {
+    const all = messagesEl.querySelectorAll('.msg.assistant .msg-actions');
+    all.forEach((el, i) => el.classList.toggle('last', i === all.length - 1));
   }
 
-  function addUserMessage(text) {
+  function isImage(a) { return (a.mime || '').startsWith('image/') || /\.(png|jpe?g|webp|gif)$/i.test(a.name || ''); }
+  function renderAtts(el, atts) {
+    el.innerHTML = '';
+    (atts || []).forEach(a => {
+      if (isImage(a) && (a.preview || a.url)) {
+        const img = document.createElement('img');
+        img.src = a.preview || a.url; img.alt = a.name || ''; img.loading = 'lazy';
+        img.addEventListener('click', () => openPreview(a.url || a.preview, 'img', a.name));
+        el.appendChild(img);
+      } else {
+        const c = document.createElement('span');
+        c.className = 'att-chip';
+        c.textContent = '📎 ' + (a.name || '');
+        el.appendChild(c);
+      }
+    });
+  }
+
+  function addUserMessage(text, atts) {
     removeWelcome();
     const wrap = document.createElement('div');
     wrap.className = 'msg user';
-    wrap.innerHTML = `<div class="bubble"><div class="content"></div></div>`;
-    wrap.querySelector('.content').innerHTML = md(text);
-    highlight(wrap);
+    wrap.innerHTML = (atts && atts.length ? '<div class="msg-atts"></div>' : '') +
+      (text ? `<div class="bubble"><div class="content"></div></div>` : '') + actionsHtml('user');
+    if (atts && atts.length) renderAtts(wrap.querySelector('.msg-atts'), atts);
+    if (text) {
+      const c = wrap.querySelector('.content');
+      c.innerHTML = md(text); c.dataset.raw = text;
+      highlight(wrap);
+    }
     messagesEl.appendChild(wrap);
     scrollBottom(true);
+    return wrap;
   }
 
   function addAssistantMessage() {
@@ -108,11 +149,44 @@
       <div class="bubble">
         <div class="content"><span class="typing"><i></i><i></i><i></i></span></div>
         <div class="files-row"></div>
-      </div>`;
+      </div>${actionsHtml('assistant')}`;
     messagesEl.appendChild(wrap);
+    markLastAssistant();
     scrollBottom(true);
     return wrap;
   }
+
+  async function copyText(text) {
+    try { await navigator.clipboard.writeText(text); return true; }
+    catch (e) {
+      const ta = document.createElement('textarea');
+      ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      let ok = false; try { ok = document.execCommand('copy'); } catch (e2) {}
+      ta.remove(); return ok;
+    }
+  }
+
+  messagesEl.addEventListener('click', async (e) => {
+    const btn = e.target.closest('[data-act]');
+    if (!btn) return;
+    const msg = btn.closest('.msg');
+    if (btn.dataset.act === 'copy') {
+      const c = msg.querySelector('.content');
+      const text = (c && (c.dataset.raw || c.innerText)) || '';
+      if (text && await copyText(text)) {
+        btn.innerHTML = ICON_OK; btn.classList.add('done');
+        setTimeout(() => { btn.innerHTML = ICON_COPY; btn.classList.remove('done'); }, 1400);
+        toast(TXT.copied);
+      }
+    } else if (btn.dataset.act === 'retry') {
+      if (busy) return;
+      const all = [...messagesEl.querySelectorAll('.msg.assistant')];
+      if (all[all.length - 1] !== msg) return;          // only the latest answer can be retried
+      msg.remove();
+      await runTurn({ regenerate: true });
+    }
+  });
 
   function fileCard(f) {
     const el = document.createElement('div');
@@ -288,16 +362,19 @@
     if (busy) return '';
     const raw = input.value.trim();
     if (!raw && !attachments.length) return '';
+    if (attachments.some(a => a.uploading)) { toast(L === 'fa' ? 'صبر کن آپلود تمام شود' : 'Wait for uploads', 'err'); return ''; }
     if (!(await ensureConv())) return '';
-    let text = raw;
-    if (attachments.length) {
-      const names = attachments.map(a => a.name).join(', ');
-      text = (L === 'fa' ? '📎 فایل‌های پیوست: ' : '📎 Attached files: ') + names + '\n\n' + text;
-    }
+    const atts = attachments.map(a => ({ name: a.name, url: a.url, mime: a.mime, preview: a.preview }));
     input.value = '';
     autoGrow();
-    clearAttachments();
-    addUserMessage(text || (L === 'fa' ? '(فایل پیوست)' : '(attachment)'));
+    attachments = [];
+    renderAttachments();
+    addUserMessage(raw, atts);
+    return runTurn({ message: raw, attachments: atts.map(a => a.name) });
+  }
+
+  // One assistant turn (a new message or a retry of the last one).
+  async function runTurn(opts) {
     busy = true;
     sendBtn.disabled = true;
     statusLine.textContent = TXT.thinking;
@@ -306,13 +383,19 @@
     const filesEl = bubble.querySelector('.files-row');
     const tw = createTypewriter(contentEl);
     bubble.classList.add('streaming');
-    let finished = false;
     let finalText = '';
 
     try {
       let resp;
       if (GUEST) {
-        GS.push(convId, 'user', text);
+        if (opts.regenerate) {
+          const c = GS.get(convId);
+          if (c && c.messages.length && c.messages[c.messages.length - 1].role === 'assistant') {
+            c.messages.pop(); GS.save([c, ...GS.all().filter(x => x.id !== c.id)]);
+          }
+        } else {
+          GS.push(convId, 'user', opts.message);
+        }
         resp = await fetch('/api/guest/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF },
@@ -327,7 +410,9 @@
         resp = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF },
-          body: JSON.stringify({ conversation_id: convId, message: text, web_search: webOn })
+          body: JSON.stringify({ conversation_id: convId, message: opts.message || '',
+                                 attachments: opts.attachments || [], regenerate: !!opts.regenerate,
+                                 web_search: webOn, model: currentModel })
         });
       }
       if (resp.status === 402) { window.location.href = '/pricing?need=1'; return ''; }
@@ -350,7 +435,7 @@
           const line = chunk.split('\n').find(l => l.startsWith('data:'));
           if (!line) continue;
           const payload = line.slice(5).trim();
-          if (payload === '[DONE]') { finished = true; continue; }
+          if (payload === '[DONE]') continue;
           let ev;
           try { ev = JSON.parse(payload); } catch (e) { continue; }
           if (ev.type === 'start' && ev.conversation_id) {
@@ -369,6 +454,8 @@
               if (!filesEl.querySelector(`a[href="${CSS.escape(f.url)}"]`)) filesEl.appendChild(fileCard(f));
             });
             finalText = ev.content || tw.text;
+            const mm = bubble.querySelector('.ma-model');
+            if (mm && ev.model_name) mm.textContent = ev.model_name;
             await tw.finish(finalText);
           } else if (ev.type === 'error') {
             tw.flush();
@@ -376,8 +463,9 @@
           }
         }
       }
-      if (!tw.text) { tw.flush(); contentEl.innerHTML = `<span class="muted">${TXT.error}</span>`; }
-      await tw.finish();
+      if (!tw.text && !contentEl.querySelector('.alert')) { tw.flush(); contentEl.innerHTML = `<span class="muted">${TXT.error}</span>`; }
+      else await tw.finish();
+      contentEl.dataset.raw = finalText || tw.text;
       if (GUEST && (finalText || tw.text)) GS.push(convId, 'assistant', finalText || tw.text);
       refreshSidebar();
     } catch (e) {
@@ -388,10 +476,47 @@
       sendBtn.disabled = false;
       statusLine.textContent = NOTE;
       toolStrip.innerHTML = '';
+      markLastAssistant();
       scrollBottom();
       if (!V.mode) input.focus();
     }
     return finalText;
+  }
+
+  /* ---------- model picker ---------- */
+  let currentModel = '';
+  try { currentModel = localStorage.getItem('bb_model') || ''; } catch (e) {}
+  async function initModelPicker() {
+    const btn = $('#modelBtn'), menu = $('#modelMenu');
+    if (!btn || !menu || !window.__MODEL_CHOICE) return;
+    let data;
+    try { data = await (await fetch('/api/models')).json(); } catch (e) { return; }
+    const items = data.items || [];
+    if (!items.length) return;
+    const auto = { id: '', name: data.auto && data.auto.name || 'Auto', desc: TXT.auto, icon: '' };
+    const all = [auto, ...items];
+    if (currentModel && !items.some(m => m.id === currentModel && !m.locked)) currentModel = '';
+    const ico = (m) => m.icon ? `<img src="${esc(m.icon)}" alt="">` : (m.id ? `<span class="mp-ph">${esc((m.name || '?')[0])}</span>` : '<span class="live-dot"></span>');
+    function paint() {
+      const m = all.find(x => x.id === currentModel) || auto;
+      $('#modelName').textContent = m.name;
+      $('#modelIco').innerHTML = ico(m);
+      menu.innerHTML = all.map(x => `<button type="button" class="mp-item ${x.id === currentModel ? 'on' : ''} ${x.locked ? 'locked' : ''}" data-id="${esc(x.id)}" role="option">
+        <span class="mp-ico">${ico(x)}</span>
+        <span class="mp-txt"><b>${esc(x.name)}</b>${x.desc ? `<small>${esc(x.desc)}</small>` : ''}</span>
+        ${x.locked ? `<span class="mp-lock">${TXT.premium}</span>` : (x.id === currentModel ? '<span class="mp-check">✓</span>' : '')}
+      </button>`).join('');
+    }
+    paint();
+    btn.addEventListener('click', (e) => { e.stopPropagation(); menu.hidden = !menu.hidden; });
+    document.addEventListener('click', (e) => { if (!menu.contains(e.target)) menu.hidden = true; });
+    menu.addEventListener('click', (e) => {
+      const it = e.target.closest('.mp-item'); if (!it) return;
+      if (it.classList.contains('locked')) { window.location.href = '/pricing'; return; }
+      currentModel = it.dataset.id || '';
+      try { localStorage.setItem('bb_model', currentModel); } catch (e2) {}
+      menu.hidden = true; paint();
+    });
   }
 
   /* ---------- voice: live dictation, auto-send after silence, conversation ---------- */
@@ -708,7 +833,7 @@
     autoGrow();
   }));
 
-  /* ---------- uploads ---------- */
+  /* ---------- uploads: images and files, several at once, with previews ---------- */
   attachBtn.addEventListener('click', () => fileInput.click());
   fileInput.addEventListener('change', () => uploadFiles([...fileInput.files]));
   input.addEventListener('paste', (e) => {
@@ -725,41 +850,44 @@
   }));
 
   async function uploadFiles(files) {
-    if (!files.length) return;
+    if (!files.length || GUEST) return;
     if (!(await ensureConv())) return;
-    for (const f of files) {
+    const jobs = files.slice(0, 12).map(async (f) => {
+      const item = { name: f.name, mime: f.type, uploading: true,
+                     preview: f.type.startsWith('image/') ? URL.createObjectURL(f) : '' };
+      attachments.push(item);
+      renderAttachments();
       const fd = new FormData();
       fd.append('file', f);
       fd.append('conv_id', convId);
-      statusLine.textContent = (L === 'fa' ? 'آپلود ' : 'Uploading ') + f.name;
       try {
         const r = await fetch('/api/upload', { method: 'POST', headers: { 'X-CSRF-Token': CSRF }, body: fd });
+        if (r.status === 402) { window.location.href = '/pricing?need=1'; return; }
         if (!r.ok) throw new Error(TXT.uploadFail);
-        const j = await r.json();
-        attachments.push(j);
-        renderAttachments();
+        Object.assign(item, await r.json(), { uploading: false });
       } catch (e) {
-        toast(e.message || TXT.uploadFail, 'err');
+        attachments = attachments.filter(a => a !== item);
+        toast((e.message || TXT.uploadFail) + ': ' + f.name, 'err');
       }
-    }
-    statusLine.textContent = TXT.ready;
+      renderAttachments();
+    });
+    await Promise.all(jobs);
     fileInput.value = '';
   }
 
   function renderAttachments() {
     attachList.innerHTML = '';
+    attachList.classList.toggle('has', attachments.length > 0);
     attachments.forEach((a, i) => {
-      const el = document.createElement('span');
-      el.className = 'attach-pill';
-      el.innerHTML = `📎 ${esc(a.name)} <button data-i="${i}">✕</button>`;
-      el.querySelector('button').addEventListener('click', () => {
-        attachments.splice(i, 1); renderAttachments();
-      });
+      const el = document.createElement('div');
+      el.className = 'att' + (a.uploading ? ' busy' : '') + (a.preview ? ' img' : '');
+      el.title = a.name;
+      el.innerHTML = (a.preview ? `<img src="${esc(a.preview)}" alt="">` : `<span class="att-file">📎<small>${esc(a.name)}</small></span>`) +
+        `<button type="button" class="att-x" aria-label="remove">✕</button>`;
+      el.querySelector('.att-x').addEventListener('click', () => { attachments.splice(i, 1); renderAttachments(); });
       attachList.appendChild(el);
     });
-    scrollBottom();
   }
-  function clearAttachments() { attachments = []; renderAttachments(); }
 
   function toast(msg, kind) {
     const el = document.getElementById('toast');
@@ -778,7 +906,12 @@
   document.querySelectorAll('.content.raw').forEach(el => {
     const raw = el.dataset.raw;
     if (raw) el.innerHTML = md(raw);
+    highlight(el);
   });
+  document.querySelectorAll('.msg-atts[data-atts]').forEach(el => {
+    try { renderAtts(el, JSON.parse(el.dataset.atts || '[]')); } catch (e) {}
+  });
+  initModelPicker();
 
   /* ---------- guest: restore a browser-stored conversation ---------- */
   if (GUEST) {
@@ -790,10 +923,12 @@
         if (m.role === 'user') addUserMessage(m.content);
         else {
           const w = addAssistantMessage();
-          w.querySelector('.content').innerHTML = md(m.content);
+          const ce = w.querySelector('.content');
+          ce.innerHTML = md(m.content); ce.dataset.raw = m.content;
           highlight(w);
         }
       });
+      markLastAssistant();
     }
     renderGuestSidebar();
   }

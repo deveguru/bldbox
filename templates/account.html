@@ -78,7 +78,23 @@
     </div>
 
     <div class="card">
-      <h3 style="font-size:16px;margin-bottom:12px">{{ 'سهمیه‌های من' if lang == 'fa' else 'My quotas' }}</h3>
+      <h3 style="font-size:16px;margin-bottom:12px">{{ 'اعتبار مصرف' if lang == 'fa' else 'Usage credit' }}</h3>
+      {% set cpct = ((credit.used / credit.total) * 100) if credit.total else 0 %}
+      <div class="quota-row">
+        <div class="qhead"><span>⚡ {{ 'اعتبار پلن' if lang == 'fa' else 'Plan credit' }}</span>
+          {% if credit.total %}<b class="mono">{{ credit.remaining|money }} / {{ credit.total|money }} {{ t('toman') }}</b>
+          {% else %}<span class="dim tiny">{{ 'ندارد' if lang == 'fa' else 'none' }}</span>{% endif %}</div>
+        <div class="quota-bar {{ 'full' if cpct >= 100 }}"><i style="width:{{ [cpct, 100]|min }}%"></i></div>
+      </div>
+      <p class="tiny dim" style="margin:4px 0 12px">{{ 'هزینه واقعی هر پیام، تصویر، صدا یا جستجو خودکار اول از اعتبار پلن و سپس از کیف پول کم می‌شود.' if lang == 'fa' else 'The real cost of every message, image, voice or search is deducted from plan credit first, then from the wallet.' }}</p>
+      {% if charges %}
+        <div class="table-wrap" style="max-height:200px;overflow:auto;margin-bottom:12px"><table class="data"><tbody>
+          {% for c in charges %}<tr><td class="dim tiny nowrap">{{ c['created_at']|ts }}</td>
+            <td class="small">{{ {'chat':'گفتگو','code':'برنامه‌نویسی','image':'ساخت تصویر','image_edit':'ویرایش تصویر','tts':'صدا','stt':'گفتار به متن','search':'جستجو','router':'مسیریابی'}.get(c['kind'], c['kind']) if lang == 'fa' else c['kind'] }}</td>
+            <td class="nowrap accent mono">-{{ (c['toman'] or 0)|money }}</td></tr>{% endfor %}
+        </tbody></table></div>
+      {% endif %}
+      <h3 style="font-size:15px;margin:6px 0 12px">{{ 'سهمیه‌های من' if lang == 'fa' else 'My quotas' }}</h3>
       {% for key, label in [('chat', 'پیام' if lang == 'fa' else 'Messages'),
                             ('image', 'تصویر' if lang == 'fa' else 'Images'),
                             ('tools', 'ابزار' if lang == 'fa' else 'Tools')] %}
@@ -103,7 +119,7 @@
           <input type="hidden" name="csrf" value="{{ csrf }}">
           <input type="hidden" name="plan_id" value="{{ sub['plan_id'] }}">
           <button class="btn btn-primary btn-block" type="submit">
-            ⟳ {{ 'خرید سهمیه اضافه (۶۰٪ قیمت)' if lang == 'fa' else 'Buy quota refill (60% of plan price)' }}
+            ⟳ {{ 'شارژ اعتبار پلن (۶۰٪ قیمت)' if lang == 'fa' else 'Refill plan credit (60% of plan price)' }}
           </button>
         </form>
       {% endif %}
