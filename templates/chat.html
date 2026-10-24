@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ conv.title if conv else settings.site_name }}{% endblock %}
 {% block header %}{% endblock %}
-{% block head_extra %}<link rel="stylesheet" href="/static/css/shell.css?v=20261025a">{% endblock %}
+{% block head_extra %}<link rel="stylesheet" href="/static/css/shell.css?v=20261025b">{% endblock %}
 {% block footer %}{% endblock %}
 {% block body %}
 {% set fa = lang == 'fa' %}
@@ -131,6 +131,6 @@
   window.__AGENT = {{ (agent.id if agent else '')|tojson }};
   window.__MODEL_CHOICE = {{ 'true' if (not guest and settings.user_model_choice == '1') else 'false' }};
 </script>
-<script src="/static/js/shell.js?v=20261025a"></script>
-<script src="/static/js/chat.js?v=20261025a"></script>
+<script src="/static/js/shell.js?v=20261025b"></script>
+<script src="/static/js/chat.js?v=20261025b"></script>
 {% endblock %}
