@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ conv.title if conv else settings.site_name }}{% endblock %}
 {% block header %}{% endblock %}
-{% block head_extra %}<link rel="stylesheet" href="/static/css/shell.css?v=20261024n">{% endblock %}
+{% block head_extra %}<link rel="stylesheet" href="/static/css/shell.css?v=20261025a">{% endblock %}
 {% block footer %}{% endblock %}
 {% block body %}
 {% set fa = lang == 'fa' %}
@@ -23,7 +23,12 @@
   <main class="cm {{ 'is-empty' if not messages }}" id="chatMain">
     <header class="cm-top">
       <button class="sb-icon" id="menuBtn" type="button" aria-label="menu">☰</button>
-      <div class="mp" id="modelPicker">
+      {% if agent %}
+      <a class="cm-agent" href="/agents?a={{ agent.id }}" title="{{ 'ویرایش ایجنت' if fa else 'Edit agent' }}">
+        <span class="ag-av">{% if agent.avatar %}<img src="{{ agent.avatar }}" alt="">{% else %}{{ agent.name[0] }}{% endif %}</span>
+        <span>{{ agent.name }}</span><small>{{ 'ایجنت سفارشی' if fa else 'custom agent' }}</small></a>
+      {% endif %}
+      <div class="mp" id="modelPicker" {% if agent %}hidden{% endif %}>
         <button class="cm-model" type="button" id="modelBtn" {% if guest %}data-need-login{% endif %} aria-haspopup="listbox">
           <span class="mp-ico" id="modelIco"><span class="live-dot"></span></span>
           <span id="modelName">{{ settings.model_label }}</span>
@@ -123,8 +128,9 @@
   window.__VOICE_SILENCE = {{ (settings.voice_silence_seconds or 3)|int }};
   window.__VOICE_LANG = {{ (settings.voice_lang or 'fa-IR')|tojson }};
   window.__LOGO = {{ ai_img|tojson }};
+  window.__AGENT = {{ (agent.id if agent else '')|tojson }};
   window.__MODEL_CHOICE = {{ 'true' if (not guest and settings.user_model_choice == '1') else 'false' }};
 </script>
-<script src="/static/js/shell.js?v=20261024n"></script>
-<script src="/static/js/chat.js?v=20261024n"></script>
+<script src="/static/js/shell.js?v=20261025a"></script>
+<script src="/static/js/chat.js?v=20261025a"></script>
 {% endblock %}

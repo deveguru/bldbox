@@ -19,6 +19,8 @@
     <a class="sb-tool {{ 'on' if page == 'code' }}" href="/code" {% if guest %}data-need-login{% endif %}>
       <span class="sb-ti code">&lt;/&gt;</span>{{ settings.code_name or 'BldBox Code' }}</a>
     {% endif %}
+    <a class="sb-tool {{ 'on' if page == 'agents' }}" href="/agents" {% if guest %}data-need-login{% endif %}>
+      <span class="sb-ti agent">⚙</span>{{ 'ایجنت سفارشی' if fa else 'Custom agents' }}</a>
     <a class="sb-tool" href="/?mode=image" data-mode="image" {% if guest %}data-need-login{% endif %}>
       <span class="sb-ti img">◐</span>{{ 'ساخت تصویر' if fa else 'Images' }}</a>
     {% if settings.enable_voice == '1' %}

@@ -14,6 +14,7 @@
   const micBtn = $('#micBtn');
   const LOGO = window.__LOGO || '';
   const GUEST = !!window.__GUEST;
+  const AGENT = window.__AGENT || '';
   const chatMain = $('#chatMain');
   const NOTE = statusLine ? statusLine.textContent : '';
 
@@ -363,7 +364,8 @@
     const raw = input.value.trim();
     if (!raw && !attachments.length) return '';
     if (attachments.some(a => a.uploading)) { toast(L === 'fa' ? 'صبر کن آپلود تمام شود' : 'Wait for uploads', 'err'); return ''; }
-    if (!(await ensureConv())) return '';
+    // signed-in users: the server creates the conversation with the first message
+    if (GUEST && !(await ensureConv())) return '';
     const atts = attachments.map(a => ({ name: a.name, url: a.url, mime: a.mime, preview: a.preview }));
     input.value = '';
     autoGrow();
@@ -412,7 +414,8 @@
           headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF },
           body: JSON.stringify({ conversation_id: convId, message: opts.message || '',
                                  attachments: opts.attachments || [], regenerate: !!opts.regenerate,
-                                 web_search: webOn, model: currentModel })
+                                 web_search: webOn, model: AGENT ? '' : currentModel,
+                                 image_model: currentImageModel, agent_id: AGENT })
         });
       }
       if (resp.status === 402) { window.location.href = '/pricing?need=1'; return ''; }
@@ -439,8 +442,10 @@
           let ev;
           try { ev = JSON.parse(payload); } catch (e) { continue; }
           if (ev.type === 'start' && ev.conversation_id) {
+            const isNew = convId !== ev.conversation_id;
             convId = ev.conversation_id;
-            history.replaceState({}, '', '/?c=' + convId);
+            history.replaceState({}, '', '/?c=' + convId + (AGENT ? '&agent=' + AGENT : ''));
+            if (isNew) addConvToSidebar(convId);
           } else if (ev.type === 'text') {
             tw.push(ev.text);
           } else if (ev.type === 'tool') {
@@ -483,29 +488,35 @@
     return finalText;
   }
 
-  /* ---------- model picker ---------- */
-  let currentModel = '';
-  try { currentModel = localStorage.getItem('bb_model') || ''; } catch (e) {}
+  /* ---------- model picker (chat + image models, names set by the admin) ---------- */
+  let currentModel = '', currentImageModel = '';
+  try { currentModel = localStorage.getItem('bb_model') || ''; currentImageModel = localStorage.getItem('bb_image_model') || ''; } catch (e) {}
   async function initModelPicker() {
     const btn = $('#modelBtn'), menu = $('#modelMenu');
-    if (!btn || !menu || !window.__MODEL_CHOICE) return;
+    if (!btn || !menu || !window.__MODEL_CHOICE || AGENT) return;
     let data;
     try { data = await (await fetch('/api/models')).json(); } catch (e) { return; }
-    const items = data.items || [];
-    if (!items.length) return;
-    const auto = { id: '', name: data.auto && data.auto.name || 'Auto', desc: TXT.auto, icon: '' };
-    const all = [auto, ...items];
+    const items = data.items || [], images = data.images || [];
+    if (!items.length && !images.length) return;
+    const auto = { id: '', name: (data.auto && data.auto.name) || 'Auto', desc: (data.auto && data.auto.desc) || TXT.auto, icon: '' };
+    const iauto = { id: '', name: (data.image_auto && data.image_auto.name) || 'Default', desc: '', icon: '' };
+    const titles = data.titles || {};
+    const chat = [auto, ...items], imgs = images.length ? [iauto, ...images] : [];
     if (currentModel && !items.some(m => m.id === currentModel && !m.locked)) currentModel = '';
+    if (currentImageModel && !images.some(m => m.id === currentImageModel && !m.locked)) currentImageModel = '';
     const ico = (m) => m.icon ? `<img src="${esc(m.icon)}" alt="">` : (m.id ? `<span class="mp-ph">${esc((m.name || '?')[0])}</span>` : '<span class="live-dot"></span>');
-    function paint() {
-      const m = all.find(x => x.id === currentModel) || auto;
-      $('#modelName').textContent = m.name;
-      $('#modelIco').innerHTML = ico(m);
-      menu.innerHTML = all.map(x => `<button type="button" class="mp-item ${x.id === currentModel ? 'on' : ''} ${x.locked ? 'locked' : ''}" data-id="${esc(x.id)}" role="option">
+    const item = (x, kind, sel) => `<button type="button" class="mp-item ${x.id === sel ? 'on' : ''} ${x.locked ? 'locked' : ''}" data-kind="${kind}" data-id="${esc(x.id)}" role="option">
         <span class="mp-ico">${ico(x)}</span>
         <span class="mp-txt"><b>${esc(x.name)}</b>${x.desc ? `<small>${esc(x.desc)}</small>` : ''}</span>
-        ${x.locked ? `<span class="mp-lock">${TXT.premium}</span>` : (x.id === currentModel ? '<span class="mp-check">✓</span>' : '')}
-      </button>`).join('');
+        ${x.locked ? `<span class="mp-lock">${TXT.premium}</span>` : (x.id === sel ? '<span class="mp-check">✓</span>' : '')}
+      </button>`;
+    function paint() {
+      const m = chat.find(x => x.id === currentModel) || auto;
+      $('#modelName').textContent = m.name;
+      $('#modelIco').innerHTML = ico(m);
+      menu.innerHTML = (imgs.length && titles.chat ? `<div class="mp-sec">${esc(titles.chat)}</div>` : '') +
+        chat.map(x => item(x, 'chat', currentModel)).join('') +
+        (imgs.length ? `<div class="mp-sec">${esc(titles.image || '')}</div>` + imgs.map(x => item(x, 'image', currentImageModel)).join('') : '');
     }
     paint();
     btn.addEventListener('click', (e) => { e.stopPropagation(); menu.hidden = !menu.hidden; });
@@ -513,325 +524,13 @@
     menu.addEventListener('click', (e) => {
       const it = e.target.closest('.mp-item'); if (!it) return;
       if (it.classList.contains('locked')) { window.location.href = '/pricing'; return; }
-      currentModel = it.dataset.id || '';
-      try { localStorage.setItem('bb_model', currentModel); } catch (e2) {}
+      try {
+        if (it.dataset.kind === 'image') { currentImageModel = it.dataset.id || ''; localStorage.setItem('bb_image_model', currentImageModel); }
+        else { currentModel = it.dataset.id || ''; localStorage.setItem('bb_model', currentModel); }
+      } catch (e2) {}
       menu.hidden = true; paint();
     });
   }
-
-  /* ---------- voice: live dictation, auto-send after silence, conversation ---------- */
-  const SILENCE = Math.max(1, Number(window.__VOICE_SILENCE || 3));
-  const VLANG = window.__VOICE_LANG || (L === 'fa' ? 'fa-IR' : 'en-US');
-  const talkBtn = $('#talkBtn');
-  const vl = {
-    box: $('#voiceLive'), text: $('#vlText'), state: $('#vlState'), timer: $('#vlTimer'),
-    count: $('#vlCount'), bar: $('#vlBar'), send: $('#vlSend'), stop: $('#vlStop'),
-  };
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  const V = { mode: null, rec: null, finalText: '', interim: '', lastActivity: 0, started: 0,
-              tick: null, media: null, recorder: null, chunks: [], ctx: null, analyser: null,
-              heard: false, speaking: false, audio: null, busyStt: false, lastPartial: 0,
-              committing: false, srFailed: false };
-  const VT = {
-    listening: L === 'fa' ? 'در حال شنیدن…' : 'Listening…',
-    sending: L === 'fa' ? 'ارسال تا' : 'Sending in',
-    thinking: L === 'fa' ? 'هوش مصنوعی در حال پاسخ…' : 'AI is answering…',
-    speaking: L === 'fa' ? 'در حال پخش پاسخ…' : 'Speaking…',
-    recording: L === 'fa' ? 'در حال ضبط… (متن هر چند ثانیه به‌روز می‌شود)' : 'Recording… (text refreshes every few seconds)',
-    placeholder: L === 'fa' ? 'صحبت کن؛ متن همین‌جا نوشته می‌شود…' : 'Speak — your words appear here…',
-    sec: L === 'fa' ? 'ثانیه' : 's',
-  };
-
-  function fmtClock(ms) {
-    const s = Math.floor(ms / 1000);
-    return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
-  }
-  function liveText() { return (V.finalText + ' ' + V.interim).trim(); }
-  function renderLive() {
-    const t = liveText();
-    vl.text.innerHTML = t ? esc(V.finalText) + (V.interim ? ' <span class="vl-interim">' + esc(V.interim) + '</span>' : '')
-                          : '<span class="dim">' + VT.placeholder + '</span>';
-    vl.text.scrollTop = vl.text.scrollHeight;
-  }
-  function showPanel(on) {
-    vl.box.hidden = !on;
-    if (micBtn) micBtn.classList.toggle('recording', on && V.mode === 'dictate');
-    if (talkBtn) talkBtn.classList.toggle('recording', V.mode === 'talk');
-  }
-
-  function startTicker() {
-    clearInterval(V.tick);
-    V.tick = setInterval(() => {
-      const now = Date.now();
-      vl.timer.textContent = fmtClock(now - V.started);
-      const hasText = !!liveText() || (V.recorder && V.heard);
-      if (V.speaking || V.committing || !hasText || busy) { vl.count.hidden = true; vl.bar.style.width = '0%'; return; }
-      const idle = (now - V.lastActivity) / 1000;
-      const left = Math.max(0, SILENCE - idle);
-      vl.count.hidden = false;
-      vl.count.textContent = VT.sending + ' ' + Math.ceil(left) + ' ' + VT.sec;
-      vl.bar.style.width = Math.min(100, (idle / SILENCE) * 100) + '%';
-      if (left <= 0) commit();
-    }, 100);
-  }
-
-  async function startListening(mode) {
-    if (V.mode && V.mode !== mode) stopVoice();
-    V.mode = mode; V.finalText = ''; V.interim = ''; V.heard = false; V.chunks = [];
-    V.started = Date.now(); V.lastActivity = Date.now();
-    vl.state.textContent = VT.listening; renderLive(); showPanel(true);
-    if (SR && !V.srFailed) startSR(); else await startRecorder();
-    startTicker();
-  }
-
-  /* -- browser speech recognition: words appear in real time -- */
-  function startSR() {
-    try { if (V.rec) V.rec.abort(); } catch (e) {}
-    const rec = new SR();
-    rec.lang = VLANG; rec.continuous = true; rec.interimResults = true; rec.maxAlternatives = 1;
-    rec.onresult = (e) => {
-      let interim = '';
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        const r = e.results[i];
-        if (r.isFinal) V.finalText = (V.finalText + ' ' + r[0].transcript).trim();
-        else interim += r[0].transcript;
-      }
-      V.interim = interim.trim(); V.lastActivity = Date.now(); renderLive();
-    };
-    rec.onspeechstart = () => { V.lastActivity = Date.now(); };
-    rec.onerror = (e) => {
-      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') { toast(TXT.voiceFail, 'err'); stopVoice(); }
-      else if (e.error === 'network' || e.error === 'language-not-supported') {
-        V.srFailed = true; V.rec = null; startRecorder();           // fall back to server STT
-      }
-    };
-    rec.onend = () => { if (V.mode && !V.speaking && !busy && V.rec === rec) { try { rec.start(); } catch (e) {} } };
-    V.rec = rec;
-    try { rec.start(); } catch (e) {}
-  }
-
-  /* -- fallback: record + voice-activity detection + server transcription -- */
-  async function startRecorder() {
-    if (!navigator.mediaDevices || !window.MediaRecorder) { toast(TXT.voiceFail, 'err'); stopVoice(); return; }
-    try {
-      V.media = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
-    } catch (e) { toast(TXT.voiceFail, 'err'); stopVoice(); return; }
-    const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus'
-      : MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : '';
-    V.chunks = [];
-    V.recorder = mime ? new MediaRecorder(V.media, { mimeType: mime }) : new MediaRecorder(V.media);
-    V.recorder.ondataavailable = ev => { if (ev.data && ev.data.size) V.chunks.push(ev.data); };
-    V.recorder.start(1000);
-    vl.state.textContent = VT.recording;
-    V.ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const src = V.ctx.createMediaStreamSource(V.media);
-    V.analyser = V.ctx.createAnalyser(); V.analyser.fftSize = 1024; src.connect(V.analyser);
-    const buf = new Uint8Array(V.analyser.fftSize);
-    const loop = () => {
-      if (!V.analyser) return;
-      V.analyser.getByteTimeDomainData(buf);
-      let sum = 0; for (let i = 0; i < buf.length; i++) { const d = (buf[i] - 128) / 128; sum += d * d; }
-      const rms = Math.sqrt(sum / buf.length);
-      if (rms > 0.035) { V.heard = true; V.lastActivity = Date.now(); }
-      if (V.heard && Date.now() - V.lastPartial > 4500 && !V.busyStt && !V.committing) partialTranscribe();
-      requestAnimationFrame(loop);
-    };
-    loop();
-  }
-  function recordedBlob() { return new Blob(V.chunks, { type: (V.recorder && V.recorder.mimeType) || 'audio/webm' }); }
-  async function transcribeBlob(blob) {
-    const fd = new FormData(); fd.append('file', blob, 'voice.webm');
-    const r = await fetch('/api/voice', { method: 'POST', headers: { 'X-CSRF-Token': CSRF }, body: fd });
-    if (!r.ok) throw new Error('voice');
-    return ((await r.json()).text || '').trim();
-  }
-  async function partialTranscribe() {
-    if (!V.chunks.length) return;
-    V.busyStt = true; V.lastPartial = Date.now();
-    try { const t = await transcribeBlob(recordedBlob()); if (t && !V.committing) { V.finalText = t; renderLive(); } } catch (e) {}
-    V.busyStt = false;
-  }
-  function releaseRecorder() {
-    try { if (V.recorder && V.recorder.state !== 'inactive') V.recorder.stop(); } catch (e) {}
-    if (V.media) V.media.getTracks().forEach(t => t.stop());
-    try { if (V.ctx) V.ctx.close(); } catch (e) {}
-    V.media = null; V.recorder = null; V.ctx = null; V.analyser = null;
-  }
-
-  /* -- commit: send the transcript to the AI -- */
-  async function commit() {
-    if (busy || V.committing || !V.mode) return;
-    V.committing = true;
-    vl.count.hidden = true;
-    let text = liveText();
-    const usedRecorder = !!V.recorder;
-    try { if (V.rec) { const r = V.rec; V.rec = null; r.abort(); } } catch (e) {}
-    if (usedRecorder) {
-      vl.state.textContent = TXT.transcribing;
-      await new Promise(r => setTimeout(r, 250));            // flush the last chunk
-      const blob = recordedBlob();
-      releaseRecorder();
-      try { const t = await transcribeBlob(blob); if (t) text = t; } catch (e) { toast(TXT.voiceFail, 'err'); }
-    }
-    V.committing = false;
-    if (!V.mode) return;
-    if (!text) { startListening(V.mode); return; }
-    if (V.mode === 'dictate') {
-      stopVoice();
-      input.value = text; autoGrow();
-      await send();
-      return;
-    }
-    // conversation mode: send, speak the answer, then listen again
-    V.speaking = true; vl.state.textContent = VT.thinking;
-    V.finalText = text; V.interim = ''; renderLive();
-    input.value = text;
-    const answer = await send();
-    if (V.mode !== 'talk') return;
-    if (answer) await speak(answer);
-    V.speaking = false;
-    if (V.mode === 'talk') startListening('talk');
-  }
-
-  function speakable(md) {
-    return String(md || '').replace(/```[\s\S]*?```/g, ' ').replace(/https?:\/\/\S+/g, '')
-      .replace(/[#*_`>|\[\]()]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 1600);
-  }
-  async function speak(text) {
-    const clean = speakable(text);
-    if (!clean) return;
-    vl.state.textContent = VT.speaking;
-    try {
-      const r = await fetch('/api/tts', { method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF },
-        body: JSON.stringify({ text: clean }) });
-      if (!r.ok) throw new Error('tts');
-      const url = URL.createObjectURL(await r.blob());
-      await new Promise(res => {
-        V.audio = new Audio(url);
-        V.audio.onended = V.audio.onerror = () => { URL.revokeObjectURL(url); res(); };
-        V.audio.play().catch(res);
-      });
-    } catch (e) {
-      if ('speechSynthesis' in window) {
-        await new Promise(res => {
-          const u = new SpeechSynthesisUtterance(clean); u.lang = VLANG; u.onend = u.onerror = res;
-          speechSynthesis.speak(u);
-        });
-      }
-    }
-    V.audio = null;
-  }
-
-  function stopVoice() {
-    V.mode = null; V.speaking = false; V.committing = false;
-    clearInterval(V.tick);
-    try { if (V.rec) { const r = V.rec; V.rec = null; r.abort(); } } catch (e) {}
-    releaseRecorder();
-    try { if (V.audio) V.audio.pause(); } catch (e) {}
-    try { if ('speechSynthesis' in window) speechSynthesis.cancel(); } catch (e) {}
-    showPanel(false);
-    statusLine.textContent = TXT.ready;
-  }
-
-  if (micBtn) micBtn.addEventListener('click', () => V.mode === 'dictate' ? commit() : startListening('dictate'));
-  if (talkBtn) talkBtn.addEventListener('click', () => V.mode === 'talk' ? stopVoice() : startListening('talk'));
-  if (vl.send) vl.send.addEventListener('click', () => commit());
-  if (vl.stop) vl.stop.addEventListener('click', stopVoice);
-  document.addEventListener('keydown', e => { if (e.key === 'Escape' && V.mode) stopVoice(); });
-
-  /* ---------- web search toggle ---------- */
-  const webBtn = $('#webBtn');
-  let webOn = false;
-  if (webBtn) webBtn.addEventListener('click', () => {
-    webOn = !webOn;
-    webBtn.classList.toggle('on', webOn);
-    webBtn.setAttribute('aria-pressed', webOn ? 'true' : 'false');
-    statusLine.textContent = webOn ? (L === 'fa' ? '🌐 جستجوی وب برای پیام بعدی روشن است' : '🌐 Web search is on') : TXT.ready;
-  });
-
-  /* ---------- sidebar ---------- */
-  function addConvToSidebar(id) {
-    const list = $('#convList');
-    const el = document.createElement('div');
-    el.className = 'conv-item active';
-    el.dataset.id = id;
-    el.innerHTML = `<span class="conv-dot"></span>
-      <a class="title" href="/?c=${id}">${L === 'fa' ? 'گفتگوی جدید' : 'New chat'}</a>
-      <button class="del" data-del="${id}">✕</button>`;
-    list.prepend(el);
-    bindDelete(el);
-    titleEl.textContent = L === 'fa' ? 'گفتگوی جدید' : 'New chat';
-  }
-
-  function renderGuestSidebar() {
-    const list = $('#convList');
-    list.innerHTML = '';
-    GS.all().forEach(c => {
-      const el = document.createElement('div');
-      el.className = 'conv-item' + (c.id === convId ? ' active' : '');
-      el.dataset.id = c.id;
-      el.innerHTML = `<a class="title" href="/?c=${c.id}">${esc(c.title || (L === 'fa' ? 'گفتگوی جدید' : 'New chat'))}</a>
-        <button class="del" data-del="${c.id}">✕</button>`;
-      list.appendChild(el);
-      bindDelete(el);
-    });
-  }
-
-  async function refreshSidebar() {
-    if (GUEST) { renderGuestSidebar(); return; }
-    try {
-      const r = await fetch('/api/conversations');
-      const j = await r.json();
-      const list = $('#convList');
-      list.innerHTML = '';
-      (j.items || []).forEach(c => {
-        const el = document.createElement('div');
-        el.className = 'conv-item' + (c.id === convId ? ' active' : '');
-        el.dataset.id = c.id;
-        el.innerHTML = `<span class="conv-dot"></span>
-          <a class="title" href="/?c=${c.id}">${esc(c.title || 'New chat')}</a>
-          <button class="del" data-del="${c.id}">✕</button>`;
-        list.appendChild(el);
-        bindDelete(el);
-      });
-    } catch (e) {}
-  }
-
-  function bindDelete(el) {
-    const b = el.querySelector('[data-del]');
-    if (b) b.addEventListener('click', async (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const id = b.dataset.del;
-      if (!confirm(window.__T.confirm_delete)) return;
-      if (GUEST) GS.remove(id);
-      else await fetch('/api/conversations/' + id, { method: 'DELETE', headers: { 'X-CSRF-Token': CSRF } });
-      if (id === convId) window.location.href = '/';
-      else el.remove();
-    });
-  }
-  document.querySelectorAll('.conv-item').forEach(bindDelete);
-
-
-  /* ---------- composer ---------- */
-  function autoGrow() {
-    input.style.height = 'auto';
-    input.style.height = Math.min(input.scrollHeight, 200) + 'px';
-  }
-  input.addEventListener('input', autoGrow);
-  input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
-      e.preventDefault();
-      send();
-    }
-  });
-  sendBtn.addEventListener('click', send);
-  document.querySelectorAll('[data-fill]').forEach(b => b.addEventListener('click', () => {
-    input.value = b.dataset.fill;
-    input.focus();
-    autoGrow();
-  }));
 
   /* ---------- uploads: images and files, several at once, with previews ---------- */
   attachBtn.addEventListener('click', () => fileInput.click());
