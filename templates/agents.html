@@ -1,28 +1,28 @@
 {% extends "base.html" %}
 {% block title %}{{ 'ایجنت سفارشی' if lang == 'fa' else 'Custom agents' }} · {{ settings.site_name }}{% endblock %}
 {% block header %}{% endblock %}
-{% block head_extra %}<link rel="stylesheet" href="/static/css/shell.css?v=20261025a"><link rel="stylesheet" href="/static/css/agents.css?v=20261025a">{% endblock %}
+{% block head_extra %}<link rel="stylesheet" href="/static/css/shell.css?v=20261026"><link rel="stylesheet" href="/static/css/agents.css?v=20261026">{% endblock %}
 {% block footer %}{% endblock %}
 {% block body %}
-<div class="app">
+<div class="app{{ ' sb-collapsed' if sb_collapsed }}">
   {% include '_sidebar.html' %}
   <main class="ag-main">
     <header class="ag-top">
       <button class="sb-icon" id="menuBtn" type="button" aria-label="menu">☰</button>
-      <h1>ایجنت سفارشی</h1>
+      <h1>{{ tr('ایجنت سفارشی', 'Custom agents') }}</h1>
       <span class="spacer"></span>
-      <button class="btn btn-primary btn-sm" type="button" id="agNew">+ ایجنت جدید</button>
+      <button class="btn btn-primary btn-sm" type="button" id="agNew">+ {{ tr('ایجنت جدید', 'New agent') }}</button>
     </header>
     <div class="ag-body">
       <section class="ag-list" id="agList">
         {% for a in agents %}
           <div class="ag-card {{ 'on' if current and current.id == a.id }}" data-id="{{ a.id }}">
             <span class="ag-av">{% if a.avatar %}<img src="{{ a.avatar }}" alt="">{% else %}{{ a.name[0] }}{% endif %}</span>
-            <div class="ag-meta"><b>{{ a.name }}</b><small>{{ a.description or ('بدون توضیح') }}</small></div>
-            <a class="btn btn-sm btn-primary" href="/?agent={{ a.id }}">گفتگو</a>
+            <div class="ag-meta"><b>{{ a.name }}</b><small>{{ a.description or tr('بدون توضیح', 'No description') }}</small></div>
+            <a class="btn btn-sm btn-primary" href="/?agent={{ a.id }}">{{ tr('گفتگو', 'Chat') }}</a>
           </div>
         {% else %}
-          <div class="ag-empty">هنوز ایجنتی نساختی. با «ایجنت جدید» ابزارها را به هم وصل کن و دستیار خودت را بساز.</div>
+          <div class="ag-empty">{{ tr('هنوز ایجنتی نساختی. با «ایجنت جدید» ابزارها را به هم وصل کن و دستیار خودت را بساز.', 'No agents yet. Click “New agent”, connect tools together and build your own assistant.') }}</div>
         {% endfor %}
       </section>
 
@@ -31,32 +31,32 @@
           <div class="ag-col">
             <div class="ag-box">
               <div class="ag-id">
-                <label class="ag-av big" id="agAvBox" title="تصویر ایجنت"><span id="agAvInner">✦</span><input type="file" id="agAvFile" accept="image/*" hidden></label>
+                <label class="ag-av big" id="agAvBox" title="{{ tr('تصویر ایجنت', 'Agent picture') }}"><span id="agAvInner">✦</span><input type="file" id="agAvFile" accept="image/*" hidden></label>
                 <div style="flex:1;min-width:0">
-                  <input class="input" id="agName" maxlength="60" placeholder="نام ایجنت — مثلاً «مشاور سئو»">
-                  <input class="input" id="agDesc" maxlength="300" placeholder="یک خط توضیح: این ایجنت چه کاری می‌کند؟" style="margin-top:8px">
+                  <input class="input" id="agName" maxlength="60" placeholder="{{ tr('نام ایجنت — مثلاً «مشاور سئو»', 'Agent name — e.g. “SEO advisor”') }}">
+                  <input class="input" id="agDesc" maxlength="300" placeholder="{{ tr('یک خط توضیح: این ایجنت چه کاری می‌کند؟', 'One line: what does this agent do?') }}" style="margin-top:8px">
                 </div>
               </div>
-              <label class="ag-label">مدل</label>
+              <label class="ag-label">{{ tr('مدل', 'Model') }}</label>
               <select class="input" id="agModel">
-                <option value="">{{ settings.picker_auto_name or 'انتخاب خودکار' }}</option>
-                {% for m in models %}<option value="{{ m.id }}" {{ 'disabled' if m.locked }}>{{ m.name }}{{ ' (پلن حرفه‌ای)' if m.locked }}</option>{% endfor %}
+                <option value="">{{ settings.picker_auto_name or tr('انتخاب خودکار', 'Automatic') }}</option>
+                {% for m in models %}<option value="{{ m.id }}" {{ 'disabled' if m.locked }}>{{ m.name }}{{ (' (' ~ tr('پلن حرفه‌ای', 'Pro plan') ~ ')') if m.locked }}</option>{% endfor %}
               </select>
-              <label class="ag-label">دستور سیستمی (شخصیت و قوانین ایجنت)</label>
-              <textarea class="input" id="agPrompt" rows="6" placeholder="مثلاً: تو یک مشاور سئو هستی. همیشه کوتاه و با فهرست پاسخ بده، و در پایان یک اقدام عملی پیشنهاد کن."></textarea>
-              <label class="ag-label">دانش سفارشی <span class="dim" id="agKChars"></span></label>
-              <textarea class="input" id="agKnow" rows="6" placeholder="متن، قوانین، اطلاعات محصول، پرسش‌های متداول…"></textarea>
+              <label class="ag-label">{{ tr('دستور سیستمی (شخصیت و قوانین ایجنت)', 'System prompt (personality and rules)') }}</label>
+              <textarea class="input" id="agPrompt" rows="6" placeholder="{{ tr('مثلاً: تو یک مشاور سئو هستی. همیشه کوتاه و با فهرست پاسخ بده، و در پایان یک اقدام عملی پیشنهاد کن.', 'e.g. You are an SEO advisor. Always answer briefly with bullet points and end with one practical next step.') }}"></textarea>
+              <label class="ag-label">{{ tr('دانش سفارشی', 'Custom knowledge') }} <span class="dim" id="agKChars"></span></label>
+              <textarea class="input" id="agKnow" rows="6" placeholder="{{ tr('متن، قوانین، اطلاعات محصول، پرسش‌های متداول…', 'Text, rules, product information, FAQs…') }}"></textarea>
               <div class="row" style="gap:8px;margin-top:8px">
-                <label class="btn btn-sm">📎 افزودن فایل دانش (PDF، Word، TXT، CSV)<input type="file" id="agKFile" hidden accept=".pdf,.docx,.txt,.md,.csv,.json"></label>
-                <span class="tiny dim" id="agKHint">برای افزودن فایل، اول ایجنت را ذخیره کن.</span>
+                <label class="btn btn-sm">📎 {{ tr('افزودن فایل دانش (PDF، Word، TXT، CSV)', 'Add knowledge file (PDF, Word, TXT, CSV)') }}<input type="file" id="agKFile" hidden accept=".pdf,.docx,.txt,.md,.csv,.json"></label>
+                <span class="tiny dim" id="agKHint">{{ tr('برای افزودن فایل، اول ایجنت را ذخیره کن.', 'Save the agent first to add files.') }}</span>
               </div>
             </div>
           </div>
 
           <div class="ag-col">
             <div class="ag-box">
-              <div class="ag-label" style="margin-top:0">مسیر ایجنت — ابزارها را به هم وصل کن</div>
-              <p class="tiny dim" style="margin:0 0 10px">روی هر ابزار بزن تا به انتهای مسیر وصل شود. ایجنت وقتی لازم باشد ابزارها را به همین ترتیب به کار می‌برد و خروجی هر مرحله را به مرحله بعد می‌دهد.</p>
+              <div class="ag-label" style="margin-top:0">{{ tr('مسیر ایجنت — ابزارها را به هم وصل کن', 'Agent pipeline — connect the tools') }}</div>
+              <p class="tiny dim" style="margin:0 0 10px">{{ tr('روی هر ابزار بزن تا به انتهای مسیر وصل شود. ایجنت وقتی لازم باشد ابزارها را به همین ترتیب به کار می‌برد و خروجی هر مرحله را به مرحله بعد می‌دهد.', 'Tap a tool to append it to the pipeline. When needed, the agent uses the tools in this order and passes each step’s output to the next.') }}</p>
               <div class="ag-palette" id="agPalette">
                 {% for c in caps if c.key != 'chat' %}
                   <button type="button" class="ag-chip" data-key="{{ c.key }}" title="{{ c.desc }}"><span>{{ c.icon }}</span>{{ c.name }}</button>
@@ -65,10 +65,10 @@
               <div class="ag-flow" id="agFlow"></div>
             </div>
             <div class="ag-actions">
-              <button class="btn btn-primary" type="button" id="agSave">ذخیره ایجنت</button>
-              <a class="btn" id="agChat" href="#" hidden>شروع گفتگو با ایجنت ←</a>
+              <button class="btn btn-primary" type="button" id="agSave">{{ tr('ذخیره ایجنت', 'Save agent') }}</button>
+              <a class="btn" id="agChat" href="#" hidden>{{ tr('شروع گفتگو با ایجنت ←', 'Chat with this agent →') }}</a>
               <span class="spacer"></span>
-              <button class="btn btn-ghost" type="button" id="agDel" hidden>حذف</button>
+              <button class="btn btn-ghost" type="button" id="agDel" hidden>{{ tr('حذف', 'Delete') }}</button>
             </div>
           </div>
         </div>
@@ -83,6 +83,6 @@
   window.__CAPS = {{ caps|tojson }};
   window.__CURRENT = {{ (current.id if current else '')|tojson }};
 </script>
-<script src="/static/js/shell.js?v=20261025a"></script>
-<script src="/static/js/agents.js?v=20261025a"></script>
+<script src="/static/js/shell.js?v=20261026"></script>
+<script src="/static/js/agents.js?v=20261026"></script>
 {% endblock %}

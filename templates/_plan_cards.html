@@ -1,7 +1,7 @@
 {% for p in plans %}
   {% set feats = (p['features_fa'] if lang == 'fa' else p['features_en']) or '' %}
   <div class="plan {{ 'featured' if p['badge'] }}">
-    {% if p['badge'] %}<span class="badge-plan">{{ p['badge'] }}</span>{% endif %}
+    {% if p['badge'] %}<span class="badge-plan">{{ t('popular') if lang == 'en' and p['badge'] == 'پیشنهاد ما' else p['badge'] }}</span>{% endif %}
     <h3>{{ p['name_fa'] if lang == 'fa' else p['name_en'] }}</h3>
     <div class="en">{{ p['name_en'] }}</div>
     <div class="price">
@@ -39,7 +39,7 @@
       {% else %}
         <a href="/login?next=/pricing" class="btn {{ 'btn-primary' if p['badge'] else '' }} btn-block btn-lg">{{ t('login_to_buy') }}</a>
       {% endif %}
-      <div class="note">{{ t('pay_secure') }} · {{ t('gateway') }}: آقای پرداخت</div>
+      <div class="note">{{ t('pay_secure') }} · {{ t('gateway') }}: {{ tr('آقای پرداخت', 'AqayePardakht') }}</div>
     </div>
   </div>
 {% endfor %}

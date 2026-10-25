@@ -7,8 +7,9 @@
   <meta name="description" content="{% block desc %}{{ settings['site_tagline_' + lang] or t('welcome_sub') }}{% endblock %}">
   <meta name="color-scheme" content="dark">
   <meta name="theme-color" content="#050508">
+  {% if settings.google_site_verification %}<meta name="google-site-verification" content="{{ settings.google_site_verification }}">{% endif %}
   <link rel="stylesheet" href="/static/vendor/hljs-dark.min.css">
-  <link rel="stylesheet" href="/static/css/app.css?v=20261025">
+  <link rel="stylesheet" href="/static/css/app.css?v=20261026">
   {% block head_extra %}{% endblock %}
   <link rel="icon" href="{% if settings.logo_version %}/static/uploads/logo.png?v={{ settings.logo_version }}{% else %}/static/img/favicon.svg{% endif %}">
   <script>
@@ -39,6 +40,7 @@
     {% if user %}
       <a href="/" class="{{ 'active' if page == 'chat' }}">◈ <span class="lbl">{{ t('chat') }}</span></a>
       <a href="/pricing" class="{{ 'active' if page == 'pricing' }}">✦ <span class="lbl">{{ t('pricing') }}</span></a>
+      {% if settings.blog_enabled == '1' %}<a href="/blog" class="{{ 'active' if page == 'blog' }}">✎ <span class="lbl">{{ settings['blog_title_' + lang] or tr('مجله', 'Blog') }}</span></a>{% endif %}
       {% if user.role == 'admin' %}
         <a href="/admin" class="{{ 'active' if page == 'admin' }}">⚙ <span class="lbl">{{ t('admin') }}</span></a>
       {% endif %}
@@ -50,10 +52,11 @@
       {% endif %}
     {% else %}
       <a href="/pricing">{{ t('pricing') }}</a>
+      {% if settings.blog_enabled == '1' %}<a href="/blog" class="{{ 'active' if page == 'blog' }}">{{ settings['blog_title_' + lang] or tr('مجله', 'Blog') }}</a>{% endif %}
     {% endif %}
     <div class="lang-switch">
-      <a href="/lang/fa?next={{ request.url.path }}" class="{{ 'on' if lang == 'fa' }}">FA</a>
-      <a href="/lang/en?next={{ request.url.path }}" class="{{ 'on' if lang == 'en' }}">EN</a>
+      <a href="/lang/fa?next={{ (request.url.path ~ ("?" ~ request.url.query if request.url.query else ""))|urlencode }}" class="{{ 'on' if lang == 'fa' }}">FA</a>
+      <a href="/lang/en?next={{ (request.url.path ~ ("?" ~ request.url.query if request.url.query else ""))|urlencode }}" class="{{ 'on' if lang == 'en' }}">EN</a>
     </div>
     {% if user %}
       <a href="/u/{{ user.username }}" class="nav-avatar" title="{{ user.display_name or user.username }}">
@@ -79,6 +82,7 @@
     <div>{{ settings.site_name }} · {{ t('welcome_note') }}</div>
     <div style="display:flex;gap:16px;flex-wrap:wrap">
       <a href="/pricing">{{ t('pricing') }}</a>
+      {% if settings.blog_enabled == '1' %}<a href="/blog">{{ settings['blog_title_' + lang] or tr('مجله', 'Blog') }}</a>{% endif %}
       <a href="/login">{{ t('login') }}</a>
       <a href="/healthz" class="mono">status</a>
     </div>

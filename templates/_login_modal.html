@@ -6,6 +6,8 @@
     <div class="lm-logo">{% if settings.logo_version %}<img src="/static/uploads/logo.png?v={{ settings.logo_version }}" alt="">{% else %}✦{% endif %}</div>
     <h3>{{ 'ورود به ' ~ settings.site_name if fa else 'Sign in to ' ~ settings.site_name }}</h3>
     <p class="lm-sub">{{ '۷ روز استفاده رایگان از همه ابزارها' if fa else '7 days free, every tool' }}</p>
+    {% set next = request.url.path ~ ('?' ~ request.url.query if request.url.query else '') %}
+    {% include '_gh_button.html' %}
     {% if sms_login %}
       <div id="lmStep1">
         <input class="input lm-in" id="lmPhone" inputmode="tel" dir="ltr" placeholder="09123456789" autocomplete="tel">

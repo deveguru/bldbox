@@ -18,6 +18,9 @@
       <a href="{{ tg_link }}" class="btn btn-primary btn-lg btn-block tg-back" style="margin-bottom:12px">✈ {{ 'بازگشت به ربات تلگرام' if lang == 'fa' else 'Back to Telegram' }}</a>
       <script>setTimeout(function () { location.href = {{ tg_link|tojson }}; }, 2500);</script>
     {% endif %}
+    {% if world_link %}
+      <a href="{{ world_link }}" class="btn btn-primary btn-lg btn-block" style="margin-bottom:12px">🌍 {{ tr('بازگشت به جهان‌ساز', 'Back to AI World Builder') }}</a>
+    {% endif %}
     <div class="row" style="justify-content:center">
       {% if ok %}
         <a href="/" class="btn btn-primary">{{ t('go_chat') }} →</a>

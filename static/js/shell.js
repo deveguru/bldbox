@@ -5,11 +5,31 @@
   const H = { 'Content-Type': 'application/json', 'X-CSRF-Token': window.__CSRF };
 
   /* ---------- sidebar ---------- */
-  const sb = $('sidebar'), scrim = $('sbScrim');
+  const sb = $('sidebar'), scrim = $('sbScrim'), shell = sb && sb.closest('.app');
+  const desktop = () => window.matchMedia('(min-width: 861px)').matches;
   const setSidebar = (open) => { if (sb) sb.classList.toggle('open', open); if (scrim) scrim.classList.toggle('on', open); };
-  if ($('menuBtn')) $('menuBtn').addEventListener('click', () => setSidebar(!sb.classList.contains('open')));
+  // Desktop: collapse/expand the sidebar column; the choice is kept in a cookie so pages render
+  // in the same state without a flash.
+  const setCollapsed = (collapsed) => {
+    if (!shell) return;
+    shell.classList.toggle('sb-collapsed', collapsed);
+    document.cookie = 'bb_sb=' + (collapsed ? 'c' : 'o') + ';path=/;max-age=31536000;samesite=lax';
+    if ($('sbCollapse')) $('sbCollapse').setAttribute('aria-expanded', String(!collapsed));
+    const target = collapsed ? $('menuBtn') : $('sbCollapse');   // keep keyboard focus on a visible control
+    if (target && desktop()) setTimeout(() => target.focus(), 0);
+  };
+  if ($('menuBtn')) $('menuBtn').addEventListener('click', () => {
+    if (desktop()) setCollapsed(false); else setSidebar(!sb.classList.contains('open'));
+  });
+  if ($('sbCollapse')) $('sbCollapse').addEventListener('click', () => setCollapsed(true));
   if ($('sbClose')) $('sbClose').addEventListener('click', () => setSidebar(false));
   if (scrim) scrim.addEventListener('click', () => setSidebar(false));
+  document.addEventListener('keydown', (e) => {   // Ctrl/Cmd + B toggles the sidebar
+    if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'b' && shell) {
+      e.preventDefault();
+      if (desktop()) setCollapsed(!shell.classList.contains('sb-collapsed')); else setSidebar(!sb.classList.contains('open'));
+    }
+  });
 
   /* ---------- login modal ---------- */
   const modal = $('loginModal');

@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}{{ blog_title }}{% if tag %} · {{ tag }}{% endif %}{% if page_no > 1 %} · {{ tr('صفحه', 'Page') }} {{ page_no }}{% endif %} — {{ settings.site_name }}{% endblock %}
+{% block desc %}{{ blog_desc or blog_title }}{% endblock %}
+{% block head_extra %}
+<link rel="stylesheet" href="/static/css/blog.css?v=20261026">
+<link rel="canonical" href="{{ site }}/blog{% if page_no > 1 %}?page={{ page_no }}{% endif %}">
+<link rel="alternate" type="application/rss+xml" title="{{ blog_title }}" href="/blog/feed.xml">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="{{ settings.site_name }}">
+<meta property="og:title" content="{{ blog_title }}">
+<meta property="og:description" content="{{ blog_desc }}">
+<meta property="og:url" content="{{ site }}/blog">
+{% if q or tag %}<meta name="robots" content="noindex, follow">{% endif %}
+{% endblock %}
+{% block body %}
+<div class="blog-wrap">
+  <section class="blog-hero">
+    <span class="kicker">✎ {{ blog_title }}</span>
+    <h1>{% if tag %}#{{ tag }}{% else %}{{ blog_desc or blog_title }}{% endif %}</h1>
+    {% if tag %}<p><a href="/blog">{{ tr('← همه مقالات', '← All articles') }}</a></p>{% endif %}
+    <form class="blog-search" method="get" action="/blog" role="search">
+      <input class="input" type="search" name="q" value="{{ q }}" placeholder="{{ tr('جستجو در مقالات…', 'Search articles…') }}" aria-label="{{ tr('جستجو', 'Search') }}">
+      <button class="btn btn-primary" type="submit">{{ tr('جستجو', 'Search') }}</button>
+    </form>
+  </section>
+
+  {% if items %}
+  <div class="blog-grid">
+    {% for a in items %}
+      <a class="blog-card" href="/blog/{{ a.slug|urlencode }}" lang="{{ a.lang }}" dir="{{ 'rtl' if a.lang == 'fa' else 'ltr' }}">
+        <div class="cover">{% if a.img %}<img src="{{ a.img }}" alt="{{ a.image_alt or a.title }}" loading="lazy" width="640" height="360">{% else %}✦{% endif %}</div>
+        <div class="body">
+          <h2>{{ a.title }}</h2>
+          {% if a.excerpt %}<p>{{ a.excerpt }}</p>{% endif %}
+          <div class="blog-meta">
+            <span>◷ {{ (a.published_at or a.created_at)|date if lang == 'en' else ((a.published_at or a.created_at)|jalali)[:10] }}</span>
+            <span>⌛ {{ a.minutes }} {{ tr('دقیقه', 'min read') }}</span>
+          </div>
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+  {% if pages > 1 %}
+  <nav class="blog-pager" aria-label="pagination">
+    {% for p in range(1, pages + 1) %}
+      {% if p == page_no %}<span class="on">{{ p }}</span>{% else %}<a href="/blog?page={{ p }}{% if tag %}&tag={{ tag|urlencode }}{% endif %}{% if q %}&q={{ q|urlencode }}{% endif %}">{{ p }}</a>{% endif %}
+    {% endfor %}
+  </nav>
+  {% endif %}
+  {% else %}
+    <div class="blog-empty">{{ tr('هنوز مقاله‌ای منتشر نشده است.', 'No articles published yet.') if not q else tr('نتیجه‌ای پیدا نشد.', 'No results found.') }}</div>
+  {% endif %}
+</div>
+{% endblock %}

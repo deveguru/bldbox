@@ -1,0 +1,113 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="600" viewBox="0 0 1280 600">
+  <defs>
+    <style>.f{font-family:Inter,'Segoe UI',Helvetica,Arial,sans-serif}</style>
+    <radialGradient id="bg" cx=".62" cy=".45" r=".85"><stop offset="0" stop-color="#160A2A"/><stop offset=".55" stop-color="#07050E"/><stop offset="1" stop-color="#040309"/></radialGradient>
+    <radialGradient id="neb1" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#7A00F0" stop-opacity=".45"/><stop offset="1" stop-color="#7A00F0" stop-opacity="0"/></radialGradient>
+    <radialGradient id="neb2" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ED1908" stop-opacity=".3"/><stop offset="1" stop-color="#ED1908" stop-opacity="0"/></radialGradient>
+    <linearGradient id="title" x1="0" x2="1"><stop offset="0" stop-color="#fff"/><stop offset=".6" stop-color="#D9C8FF"/><stop offset="1" stop-color="#FFB3AD"/></linearGradient>
+    <linearGradient id="grass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8fdc6a"/><stop offset="1" stop-color="#4f9e3f"/></linearGradient>
+    <linearGradient id="rock" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4a3a5e"/><stop offset="1" stop-color="#140d20"/></linearGradient>
+    <linearGradient id="sand" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f2cd37"/><stop offset="1" stop-color="#c79a1c"/></linearGradient>
+    <linearGradient id="lake" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5fc3ff"/><stop offset="1" stop-color="#2f6fd6"/></linearGradient>
+    <filter id="blur" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="10"/></filter>
+  </defs>
+  <rect width="1280" height="600" rx="28" fill="url(#bg)"/>
+  <ellipse cx="860" cy="250" rx="420" ry="260" fill="url(#neb1)"/>
+  <ellipse cx="1180" cy="520" rx="260" ry="160" fill="url(#neb2)"/>
+  <g fill="#fff">
+    <circle cx="600" cy="60" r="1.3" opacity=".8"/><circle cx="1210" cy="90" r="1.1" opacity=".6"/><circle cx="1040" cy="40" r="1" opacity=".5"/>
+    <circle cx="700" cy="540" r="1.2" opacity=".6"/><circle cx="1240" cy="300" r="1" opacity=".5"/><circle cx="560" cy="380" r="1" opacity=".4"/>
+    <circle cx="950" cy="560" r="1.3" opacity=".7"/><circle cx="660" cy="200" r=".9" opacity=".5"/>
+  </g>
+
+  <!-- copy -->
+  <g transform="translate(64 0)">
+    <rect y="62" width="214" height="32" rx="16" fill="#7A00F0" fill-opacity=".22" stroke="#B266FF" stroke-opacity=".5"/>
+    <text x="107" y="83" text-anchor="middle" class="f" font-size="14" font-weight="600" fill="#E5D5FF">🌍  world.bldbox.ir  ·  NEW</text>
+    <text y="152" class="f" font-size="48" font-weight="800" fill="url(#title)">AI World Builder</text>
+    <text y="194" class="f" font-size="19" fill="#B6AACF">Pull a world out of the void with one prompt,</text>
+    <text y="220" class="f" font-size="19" fill="#B6AACF">then grow it 360° — piece by piece — and join</text>
+    <text y="246" class="f" font-size="19" fill="#B6AACF">it to other people’s worlds.</text>
+
+    <g class="f" font-size="13.5" font-weight="600">
+      <g transform="translate(0 280)">
+        <rect width="62" height="30" rx="15" fill="#4fc3f7" fill-opacity=".18" stroke="#4fc3f7" stroke-opacity=".6"/><text x="31" y="20" text-anchor="middle" fill="#bfeaff">2D</text>
+        <rect x="70" width="64" height="30" rx="15" fill="#ff8a65" fill-opacity=".18" stroke="#ff8a65" stroke-opacity=".6"/><text x="102" y="20" text-anchor="middle" fill="#ffd2c4">Pixel</text>
+        <rect x="142" width="72" height="30" rx="15" fill="#8bc34a" fill-opacity=".18" stroke="#8bc34a" stroke-opacity=".6"/><text x="178" y="20" text-anchor="middle" fill="#dcf5bf">Blocky</text>
+        <rect x="222" width="96" height="30" rx="15" fill="#f2cd37" fill-opacity=".18" stroke="#f2cd37" stroke-opacity=".6"/><text x="270" y="20" text-anchor="middle" fill="#fff0b3">LEGO-like</text>
+      </g>
+      <g transform="translate(0 318)">
+        <rect width="86" height="30" rx="15" fill="#ff6fb1" fill-opacity=".18" stroke="#ff6fb1" stroke-opacity=".6"/><text x="43" y="20" text-anchor="middle" fill="#ffd0e6">3D pixel</text>
+        <rect x="94" width="52" height="30" rx="15" fill="#b266ff" fill-opacity=".2" stroke="#b266ff" stroke-opacity=".7"/><text x="120" y="20" text-anchor="middle" fill="#e5d5ff">3D</text>
+        <rect x="154" width="74" height="30" rx="15" fill="#ff5f8f" fill-opacity=".18" stroke="#ff5f8f" stroke-opacity=".6"/><text x="191" y="20" text-anchor="middle" fill="#ffd0dd">Anime</text>
+        <rect x="236" width="82" height="30" rx="15" fill="#ED1908" fill-opacity=".25" stroke="#ff6b5e" stroke-opacity=".7"/><text x="277" y="20" text-anchor="middle" fill="#ffd0cc">🥽 VR</text>
+      </g>
+    </g>
+
+    <g transform="translate(0 378)" class="f">
+      <rect width="232" height="116" rx="18" fill="#120F1D" stroke="#C8BAE3" stroke-opacity=".14"/>
+      <text x="18" y="32" font-size="15" font-weight="800" fill="#fff">Special</text>
+      <text x="18" y="56" font-size="13" fill="#A99BC8">2D &amp; pixel worlds</text>
+      <text x="18" y="76" font-size="13" fill="#A99BC8">360° split into 3 sectors</text>
+      <text x="18" y="96" font-size="13" fill="#A99BC8">fast models · base memory</text>
+      <rect x="248" width="232" height="116" rx="18" fill="#1A0F14" stroke="#f5c542" stroke-opacity=".45"/>
+      <text x="266" y="32" font-size="15" font-weight="800" fill="#ffd36b">Premium VIP</text>
+      <text x="266" y="56" font-size="13" fill="#E8CFA0">every style · VR</text>
+      <text x="266" y="76" font-size="13" fill="#E8CFA0">9 sectors · group expansion</text>
+      <text x="266" y="96" font-size="13" fill="#E8CFA0">stronger models · deep memory</text>
+    </g>
+    <text y="530" class="f" font-size="13" fill="#7B6E96">Rendered entirely in the browser with Three.js — the server only keeps each world’s file.</text>
+    <text y="552" class="f" font-size="13" fill="#7B6E96">7-day trial · every AI action uses a 3-hour allowance to keep usage fair.</text>
+  </g>
+
+  <!-- illustration: main island with 9 sector ring -->
+  <g transform="translate(860 300)">
+    <g fill="none" stroke="#B266FF" stroke-opacity=".45" stroke-dasharray="6 6">
+      <ellipse rx="250" ry="92"/>
+      <ellipse rx="170" ry="62"/>
+    </g>
+    <g stroke="#B266FF" stroke-opacity=".3">
+      <line x1="170" y1="0" x2="250" y2="0"/><line x1="130" y1="40" x2="192" y2="59"/><line x1="30" y1="61" x2="44" y2="90"/>
+      <line x1="-85" y1="54" x2="-125" y2="80"/><line x1="-160" y1="21" x2="-235" y2="31"/><line x1="-160" y1="-21" x2="-235" y2="-31"/>
+      <line x1="-85" y1="-54" x2="-125" y2="-80"/><line x1="30" y1="-61" x2="44" y2="-90"/><line x1="130" y1="-40" x2="192" y2="-59"/>
+    </g>
+    <path d="M60 -40 A250 92 0 0 1 238 -28 L162 -19 A170 62 0 0 0 40 -60 Z" fill="#ED1908" fill-opacity=".28" stroke="#ED1908" stroke-opacity=".7"/>
+    <text x="150" y="-36" text-anchor="middle" class="f" font-size="13" font-weight="700" fill="#fff">+ ring 2</text>
+
+    <ellipse cy="96" rx="120" ry="30" fill="#7A00F0" opacity=".35" filter="url(#blur)"/>
+    <path d="M-150 0 C -140 70 -60 140 0 168 C 60 140 140 70 150 0 Z" fill="url(#rock)"/>
+    <path d="M-120 40 L-95 110 L-80 52 Z M 70 60 L 92 120 L 104 48 Z M -20 90 L 0 160 L 16 92 Z" fill="#241834"/>
+    <ellipse rx="150" ry="52" fill="url(#grass)"/>
+    <ellipse cx="-36" cy="6" rx="46" ry="15" fill="url(#lake)"/>
+    <path d="M30 -30 L 70 -78 L 110 -26 Z" fill="#9aa3b5"/><path d="M58 -64 L 70 -78 L 82 -62 L 72 -58 Z" fill="#fff"/>
+    <g fill="#2c6b3a">
+      <path d="M-120 -4 l12 -34 l12 34 z"/><path d="M-100 12 l10 -28 l10 28 z"/><path d="M-84 -16 l11 -30 l11 30 z"/>
+      <path d="M100 18 l10 -28 l10 28 z"/><path d="M118 0 l9 -26 l9 26 z"/><path d="M-60 26 l9 -24 l9 24 z"/>
+    </g>
+    <g transform="translate(-6 -30)">
+      <rect x="-10" y="-34" width="20" height="40" fill="#c8c1d8"/><path d="M-14 -34 L0 -54 L14 -34 Z" fill="#ED1908"/>
+      <rect x="-26" y="-14" width="14" height="20" fill="#b3abc6"/><rect x="12" y="-14" width="14" height="20" fill="#b3abc6"/>
+      <circle cy="-60" r="4" fill="#ffd36b"/>
+    </g>
+    <rect x="22" y="12" width="24" height="16" fill="#e8dcc0"/><path d="M19 12 L34 0 L49 12 Z" fill="#b5452e"/>
+  </g>
+
+  <!-- bridge to a LEGO-like neighbour -->
+  <path d="M1020 330 C 1070 300 1110 320 1150 300" stroke="#c9a15a" stroke-width="9" fill="none" stroke-linecap="round"/>
+  <path d="M1020 330 C 1070 300 1110 320 1150 300" stroke="#7a5230" stroke-width="9" fill="none" stroke-dasharray="3 7"/>
+  <g transform="translate(1196 296)">
+    <path d="M-62 0 L -50 52 L 0 74 L 50 52 L 62 0 Z" fill="url(#rock)"/>
+    <ellipse rx="62" ry="22" fill="url(#sand)"/>
+    <g fill="#c91a09"><rect x="-30" y="-24" width="22" height="18"/><rect x="2" y="-30" width="22" height="24" fill="#0055bf"/></g>
+    <g fill="#f2cd37"><circle cx="-24" cy="-25" r="3"/><circle cx="-14" cy="-25" r="3"/><circle cx="8" cy="-31" r="3" fill="#2d7ae0"/><circle cx="18" cy="-31" r="3" fill="#2d7ae0"/></g>
+  </g>
+  <text x="1090" y="356" text-anchor="middle" class="f" font-size="12.5" font-weight="700" fill="#FFD9FF">⇄ bridge built by two agents</text>
+
+  <!-- portal to a pixel world -->
+  <g transform="translate(640 150)">
+    <ellipse rx="26" ry="34" fill="none" stroke="#B266FF" stroke-width="6"/>
+    <ellipse rx="19" ry="27" fill="#7A00F0" fill-opacity=".45"/>
+    <text y="58" text-anchor="middle" class="f" font-size="12" font-weight="700" fill="#E5D5FF">portal</text>
+  </g>
+  <path d="M664 170 C 700 200 720 230 740 250" stroke="#B266FF" stroke-opacity=".5" stroke-dasharray="4 6" fill="none"/>
+</svg>

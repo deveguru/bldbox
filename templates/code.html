@@ -2,13 +2,13 @@
 {% block title %}{{ (project.title ~ ' · ') if project else '' }}{{ settings.code_name or 'BldBox Code' }}{% endblock %}
 {% block header %}{% endblock %}
 {% block footer %}{% endblock %}
-{% block head_extra %}<link rel="stylesheet" href="/static/css/shell.css?v=20261025"><link rel="stylesheet" href="/static/css/code.css?v=20261025">{% endblock %}
+{% block head_extra %}<link rel="stylesheet" href="/static/css/shell.css?v=20261026"><link rel="stylesheet" href="/static/css/code.css?v=20261025">{% endblock %}
 {% block body %}
 {% set fa = lang == 'fa' %}
 {% set guest = False %}
 {% set conversations = [] %}
 {% set conv = None %}
-<div class="app">
+<div class="app{{ ' sb-collapsed' if sb_collapsed }}">
   {% include '_sidebar.html' %}
   <main class="cx {{ 'is-new' if not project }}" id="codeMain">
     <section class="cx-chat">
@@ -78,6 +78,6 @@
   window.__GUEST = false;
   window.__CODE = { pid: {{ (project.id if project else '')|tojson }}, token: {{ raw_token|tojson }} };
 </script>
-<script src="/static/js/shell.js?v=20261025"></script>
+<script src="/static/js/shell.js?v=20261026"></script>
 <script src="/static/js/code.js?v=20261025"></script>
 {% endblock %}

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ owner.display_name or owner.username }} (@{{ owner.username }}) — {{ settings.site_name }}{% endblock %}
-{% block desc %}{{ owner.bio or ('پروفایل ' ~ owner.username ~ ' در ' ~ settings.site_name) }}{% endblock %}
+{% block desc %}{{ owner.bio or tr('پروفایل ' ~ owner.username ~ ' در ' ~ settings.site_name, owner.username ~ ' on ' ~ settings.site_name) }}{% endblock %}
 {% block body %}
 {% set accent = prof.accent or '#9B30FF' %}
 <div class="pf" style="--acc:{{ accent }}">
@@ -14,7 +14,7 @@
       <div class="card pf-hidden">
         <div class="pf-avatar lg">{% if avatar_url(owner) %}<img src="{{ avatar_url(owner) }}" alt="">{% else %}{{ owner.username[0]|upper }}{% endif %}</div>
         <h2>@{{ owner.username }}</h2>
-        <p class="muted">🔒 این پروفایل خصوصی است.</p>
+        <p class="muted">🔒 {{ tr('این پروفایل خصوصی است.', 'This profile is private.') }}</p>
       </div>
     {% else %}
     <div class="pf-layout">
@@ -24,7 +24,7 @@
         <div class="pf-handle">@{{ owner.username }}{% if owner.role == 'admin' %} <span class="badge accent">team</span>{% endif %}</div>
         {% if prof.headline %}<div class="pf-headline">{{ prof.headline }}</div>{% endif %}
         {% if owner.bio %}<p class="pf-bio">{{ owner.bio }}</p>{% endif %}
-        {% if is_self %}<a class="btn btn-block" href="/account#profile">✎ ویرایش پروفایل</a>{% endif %}
+        {% if is_self %}<a class="btn btn-block" href="/account#profile">✎ {{ tr('ویرایش پروفایل', 'Edit profile') }}</a>{% endif %}
         <ul class="pf-meta">
           {% if prof.location %}<li><span>⌖</span>{{ prof.location }}</li>{% endif %}
           {% if prof.website %}<li><span>🔗</span><a href="{{ prof.website }}" rel="nofollow noopener" target="_blank">{{ prof.website.split('://')[-1] }}</a></li>{% endif %}
@@ -32,40 +32,40 @@
           {% elif prof.github %}<li><span>⌥</span><a href="https://github.com/{{ prof.github }}" target="_blank" rel="nofollow noopener">github.com/{{ prof.github }}</a></li>{% endif %}
           {% if prof.telegram %}<li><span>✈</span><a href="https://t.me/{{ prof.telegram.lstrip('@') }}" target="_blank" rel="nofollow noopener">@{{ prof.telegram.lstrip('@') }}</a></li>{% endif %}
           {% if prof.instagram %}<li><span>◐</span><a href="https://instagram.com/{{ prof.instagram.lstrip('@') }}" target="_blank" rel="nofollow noopener">@{{ prof.instagram.lstrip('@') }}</a></li>{% endif %}
-          <li><span>◷</span>عضو از {{ owner.created_at|jalali }} <span class="dim">({{ member_days }} روز)</span></li>
+          <li><span>◷</span>{{ tr('عضو از', 'Joined') }} {{ owner.created_at|date if lang == 'en' else owner.created_at|jalali }} <span class="dim">({{ member_days }} {{ tr('روز', 'days') }})</span></li>
         </ul>
-        {% if is_self and not prof.public %}<div class="alert" style="margin-top:12px">🔒 پروفایل تو خصوصی است؛ فقط خودت می‌بینی.</div>{% endif %}
+        {% if is_self and not prof.public %}<div class="alert" style="margin-top:12px">🔒 {{ tr('پروفایل تو خصوصی است؛ فقط خودت می‌بینی.', 'Your profile is private; only you can see it.') }}</div>{% endif %}
       </aside>
 
       <main class="pf-main">
         {% if prof.show_stats or is_self %}
         <div class="pf-stats">
-          <div class="pf-stat"><b>{{ stats.conversations }}</b><span>گفتگو</span></div>
-          <div class="pf-stat"><b>{{ stats.messages }}</b><span>پیام</span></div>
-          <div class="pf-stat"><b>{{ stats.images }}</b><span>تصویر ساخته‌شده</span></div>
-          <div class="pf-stat"><b>{{ stats.files }}</b><span>فایل خروجی</span></div>
-          <div class="pf-stat"><b>{{ streak }}</b><span>روز پشت‌سرهم 🔥</span></div>
+          <div class="pf-stat"><b>{{ stats.conversations }}</b><span>{{ tr('گفتگو', 'Chats') }}</span></div>
+          <div class="pf-stat"><b>{{ stats.messages }}</b><span>{{ tr('پیام', 'Messages') }}</span></div>
+          <div class="pf-stat"><b>{{ stats.images }}</b><span>{{ tr('تصویر ساخته‌شده', 'Images created') }}</span></div>
+          <div class="pf-stat"><b>{{ stats.files }}</b><span>{{ tr('فایل خروجی', 'Files') }}</span></div>
+          <div class="pf-stat"><b>{{ streak }}</b><span>{{ tr('روز پشت‌سرهم', 'Day streak') }} 🔥</span></div>
         </div>
         {% endif %}
 
         {% if prof.show_activity or is_self %}
         <section class="card pf-card">
           <div class="row" style="justify-content:space-between;margin-bottom:10px">
-            <h3 style="margin:0;font-size:15px">{{ total }} فعالیت در سال گذشته</h3>
-            <div class="pf-legend"><span>کم</span>{% for l in range(5) %}<i class="lv{{ l }}"></i>{% endfor %}<span>زیاد</span></div>
+            <h3 style="margin:0;font-size:15px">{{ total }} {{ tr('فعالیت در سال گذشته', 'activities in the last year') }}</h3>
+            <div class="pf-legend"><span>{{ tr('کم', 'Less') }}</span>{% for l in range(5) %}<i class="lv{{ l }}"></i>{% endfor %}<span>{{ tr('زیاد', 'More') }}</span></div>
           </div>
           <div class="pf-heat-scroll">
             <div class="pf-heat">
-              {% for w in weeks %}<div class="pf-week">{% for d in w %}<i class="lv{{ d.lvl if d.n >= 0 else 'x' }}" title="{{ d.d }} · {{ d.n if d.n > 0 else 0 }} فعالیت"></i>{% endfor %}</div>{% endfor %}
+              {% for w in weeks %}<div class="pf-week">{% for d in w %}<i class="lv{{ d.lvl if d.n >= 0 else 'x' }}" title="{{ d.d }} · {{ d.n if d.n > 0 else 0 }} {{ tr('فعالیت', 'activities') }}"></i>{% endfor %}</div>{% endfor %}
             </div>
           </div>
-          <div class="pf-days tiny dim"><span>ش</span><span></span><span>د</span><span></span><span>چ</span><span></span><span>ج</span></div>
+          <div class="pf-days tiny dim">{% if lang == 'en' %}<span>Sat</span><span></span><span>Mon</span><span></span><span>Wed</span><span></span><span>Fri</span>{% else %}<span>ش</span><span></span><span>د</span><span></span><span>چ</span><span></span><span>ج</span>{% endif %}</div>
         </section>
         {% endif %}
 
         {% if (prof.show_tools or is_self) and stats.top_tools %}
         <section class="card pf-card">
-          <h3 style="font-size:15px">ابزارهای محبوب</h3>
+          <h3 style="font-size:15px">{{ tr('ابزارهای محبوب', 'Top tools') }}</h3>
           {% set mx = stats.top_tools[0].n %}
           <div class="pf-tools">
             {% for t in stats.top_tools %}
@@ -77,7 +77,7 @@
         {% endif %}
 
         {% if not (prof.show_stats or prof.show_activity or prof.show_tools) and not is_self %}
-          <div class="card pf-card muted">این کاربر آمار فعالیت خود را پنهان کرده است.</div>
+          <div class="card pf-card muted">{{ tr('این کاربر آمار فعالیت خود را پنهان کرده است.', 'This user keeps their activity private.') }}</div>
         {% endif %}
       </main>
     </div>

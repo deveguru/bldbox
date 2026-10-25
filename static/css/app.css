@@ -738,3 +738,9 @@ button.link[disabled]{color:var(--text-dim);cursor:default}
 .acc-cover-actions{position:absolute;inset-inline-end:12px;bottom:12px;display:flex;gap:6px}
 .acc-cover-actions .btn{background:rgba(5,5,8,.65);backdrop-filter:blur(6px)}
 .acc-cover-hint{position:absolute;inset-inline-start:12px;bottom:14px;color:rgba(255,255,255,.75);text-shadow:0 1px 4px #000}
+
+/* "Continue with GitHub" */
+.btn-github{display:flex;align-items:center;justify-content:center;gap:10px;background:#f0f6fc;color:#0d1117;border-color:transparent;font-weight:700}
+.btn-github:hover{background:#fff;color:#0d1117}
+.auth-or{display:flex;align-items:center;gap:12px;color:var(--text-dim);font-size:12.5px;margin:14px 0}
+.auth-or::before,.auth-or::after{content:"";flex:1;height:1px;background:var(--line)}

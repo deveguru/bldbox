@@ -1,0 +1,116 @@
+<!doctype html>
+{% set fa = lang == 'fa' %}
+<html lang="{{ lang }}" dir="{{ dir }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>{% if view_world %}{{ view_world.name }} — {% endif %}{{ tr('جهان‌ساز هوش مصنوعی', 'AI World Builder') }} · {{ settings.site_name }}</title>
+  <meta name="description" content="{{ tr('با هوش مصنوعی دنیای خودت را بساز؛ دوبعدی، پیکسلی، بلوکی، لگویی، سه‌بعدی و انیمه‌ای — و آن را به دنیای دیگران وصل کن.', 'Build your own world with AI — 2D, pixel, blocky, LEGO-like, 3D and anime — and connect it to other people’s worlds.') }}">
+  <meta name="theme-color" content="#05040b">
+  <meta property="og:title" content="{{ view_world.name if view_world else tr('جهان‌ساز هوش مصنوعی بیلدباکس', 'BldBox AI World Builder') }}">
+  <meta property="og:description" content="{{ (view_world.description if view_world else '') or tr('دنیای خودت را با هوش مصنوعی بساز.', 'Build your own world with AI.') }}">
+  <link rel="icon" href="{% if settings.logo_version %}/static/uploads/logo.png?v={{ settings.logo_version }}{% else %}/static/img/favicon.svg{% endif %}">
+  <link rel="stylesheet" href="/static/world/world.css?v=20261026">
+  <script type="importmap">{"imports": {"three": "/static/vendor/three/three.module.min.js"}}</script>
+</head>
+<body class="{{ 'sb-collapsed' if sb_collapsed }}">
+<div class="wb-app">
+  <aside class="wb-sb" id="sb">
+    <div class="wb-brand">
+      <span class="mk">🌍</span>
+      <div><b>{{ tr('جهان‌ساز', 'World Builder') }}</b><small>AI World Builder · {{ settings.site_name }}</small></div>
+      <button class="ic-btn" id="sbCollapse" type="button" title="{{ tr('بستن نوار کناری', 'Close sidebar') }}" aria-label="{{ tr('بستن نوار کناری', 'Close sidebar') }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/></svg></button>
+    </div>
+    <button class="sb-item sb-new" id="newWorld" type="button"><span class="i">＋</span>{{ tr('دنیای جدید', 'New world') }}</button>
+    <button class="sb-item" data-panel="explore" type="button"><span class="i">🧭</span>{{ tr('کاوش دنیاها', 'Explore worlds') }}</button>
+    {% if user %}
+    <button class="sb-item" data-panel="connections" type="button"><span class="i">⇄</span>{{ tr('اتصال دنیاها', 'Connections') }}<span class="badge" id="pendBadge" hidden></span></button>
+    <button class="sb-item" data-panel="notes" type="button"><span class="i">🔔</span>{{ tr('اعلان‌ها', 'Notifications') }}<span class="badge" id="noteBadge" hidden></span></button>
+    {% endif %}
+    <a class="sb-item" href="/pricing"><span class="i">✦</span>{{ tr('پلن‌ها', 'Plans') }}</a>
+    <div class="sb-label">{{ tr('دنیاهای من', 'My worlds') }}</div>
+    <div class="sb-list" id="worldList"></div>
+    <div class="sb-foot">
+      {% if user %}
+        <div class="plan-box" id="planBox"></div>
+        <div class="user-row">
+          <span class="av">{% if avatar_url(user) %}<img src="{{ main_url }}{{ avatar_url(user) }}" alt="">{% else %}{{ (user.display_name or user.username)[0]|upper }}{% endif %}</span>
+          <span class="nm">{{ user.display_name or user.username }}</span>
+        </div>
+        <div class="user-links">
+          <a href="{{ main_url }}/">← {{ settings.site_name }}</a>
+          <a href="{{ main_url }}/account">{{ tr('حساب', 'Account') }}</a>
+          <a href="/lang/{{ 'en' if fa else 'fa' }}?next={{ (request.url.path ~ ('?' ~ request.url.query if request.url.query else ''))|urlencode }}">🌐 {{ 'English' if fa else 'فارسی' }}</a>
+          <form method="post" action="/logout" style="display:inline"><input type="hidden" name="csrf" value="{{ csrf }}"><button type="submit">⏻ {{ tr('خروج', 'Sign out') }}</button></form>
+        </div>
+      {% else %}
+        <div class="plan-box"><div class="t"><b>{{ tr('۷ روز رایگان', '7 days free') }}</b></div>
+          <small>{{ tr('با حساب بیلدباکس وارد شو و اولین دنیایت را بساز.', 'Sign in with your BldBox account and build your first world.') }}</small>
+          <a class="up" href="/login?next={{ request.url.path|urlencode }}">{{ tr('ورود / ثبت‌نام', 'Sign in / Sign up') }}</a></div>
+        <div class="user-links"><a href="{{ main_url }}/">← {{ settings.site_name }}</a>
+          <a href="/lang/{{ 'en' if fa else 'fa' }}?next={{ request.url.path|urlencode }}">🌐 {{ 'English' if fa else 'فارسی' }}</a></div>
+      {% endif %}
+    </div>
+  </aside>
+
+  <main class="wb-main">
+    <div class="wb-stage" id="stage"></div>
+    <header class="wb-top">
+      <button class="ic-btn" id="menuBtn" type="button" aria-label="menu">☰</button>
+      <h1 id="wTitle">{{ tr('جهان‌ساز هوش مصنوعی', 'AI World Builder') }}</h1>
+      <span class="chip style" id="wStyle" hidden></span>
+      <span class="chip" id="wInfo" hidden></span>
+      <span class="sp"></span>
+      <span id="vrHost"></span>
+      <div class="top-actions" id="wActions" hidden>
+        <button class="ic-btn" id="aShare" type="button" title="{{ tr('اشتراک‌گذاری', 'Share') }}">🔗</button>
+        <button class="ic-btn" id="aFile" type="button" title="{{ tr('دانلود فایل دنیا', 'Download world file') }}">⤓</button>
+        <button class="ic-btn" id="aShot" type="button" title="{{ tr('عکس از دنیا', 'Screenshot') }}">📷</button>
+        <button class="ic-btn" id="aSettings" type="button" title="{{ tr('تنظیمات دنیا', 'World settings') }}">⚙</button>
+      </div>
+    </header>
+
+    <section class="wb-thread" id="thread" aria-live="polite"></section>
+
+    <div class="wb-hero" id="hero">
+      <h2>{{ tr('دنیای بعدی را از خلأ بیرون بکش', 'Pull your next world out of the void') }}</h2>
+      <p>{{ tr('ایده‌ات را بنویس؛ هوش مصنوعی هسته دنیا را می‌سازد و بعد آن را ۳۶۰ درجه، بخش به بخش گسترش می‌دهی و به دنیای دیگران وصل می‌کنی.', 'Describe an idea; the AI builds the core of your world, then you grow it 360°, piece by piece, and connect it to other people’s worlds.') }}</p>
+      <div class="ex" id="examples">
+        <button type="button">{{ tr('جزیره‌ای شناور با جنگل کاج، دریاچه آبی و قلعه‌ای قدیمی', 'A floating island with pine forest, a blue lake and an old castle') }}</button>
+        <button type="button">{{ tr('شهر کوچک ساحلی با فانوس دریایی و قایق‌ها', 'A small seaside town with a lighthouse and boats') }}</button>
+        <button type="button">{{ tr('بیابان بلورین با اهرام بنفش و غروب سرخ', 'A crystal desert with purple pyramids under a red sunset') }}</button>
+      </div>
+    </div>
+
+    <div class="wb-composer">
+      <div class="viewbar" id="viewbar" hidden></div>
+      <div class="cmp" id="composer">
+        <div class="cmp-tools" id="cmpTools"></div>
+        <textarea id="prompt" rows="1" dir="auto" placeholder="{{ tr('دنیایت را توصیف کن…', 'Describe your world…') }}"></textarea>
+        <div class="cmp-bar">
+          <span id="cmpLeft" style="display:flex;gap:6px;flex-wrap:wrap"></span>
+          <span class="sp"></span>
+          <button class="send" id="send" type="button" aria-label="{{ tr('ارسال', 'Send') }}">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg></button>
+        </div>
+      </div>
+      <div class="cmp-note" id="cmpNote">{{ tr('دنیاها کاملاً در مرورگر تو رندر می‌شوند؛ فقط فایل دنیا روی سرور ذخیره می‌شود.', 'Worlds render entirely in your browser; only the world file is stored on the server.') }}</div>
+    </div>
+  </main>
+</div>
+<div class="modal" id="modal" hidden><div class="panel" role="dialog" aria-modal="true"><div class="panel-h"><h3 id="mTitle"></h3><button class="ic-btn" id="mClose" type="button" aria-label="close">✕</button></div><div class="panel-b" id="mBody"></div></div></div>
+<div class="toast" id="toast" role="status"></div>
+<script>
+  window.__W = {
+    csrf: {{ csrf|tojson }}, lang: {{ lang|tojson }}, dir: {{ dir|tojson }},
+    user: {{ ({'id': user.id, 'username': user.username, 'admin': user.role == 'admin'} if user else None)|tojson }},
+    acc: {{ acc|tojson }}, open: {{ (open_world or '')|tojson }}, view: {{ (view_world.id if view_world else '')|tojson }},
+    main: {{ main_url|tojson }}, world: {{ world_url|tojson }},
+    styles: {{ styles|tojson }}, panel: {{ request.query_params.get('panel', '')|tojson }},
+    paid: {{ ('1' if request.query_params.get('paid') else '')|tojson }}
+  };
+</script>
+<script type="module" src="/static/world/app.js?v=20261026"></script>
+</body>
+</html>

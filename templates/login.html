@@ -61,6 +61,7 @@
     </div>
     {% if error %}<div class="alert">{{ error }}</div>{% endif %}
     {% if ok %}<div class="alert ok">{{ ok }}</div>{% endif %}
+    {% include '_gh_button.html' %}
     {% if sms_login and mode == 'login' %}
     <div class="auth-tabs" role="tablist">
       <button type="button" class="auth-tab on" data-pane="smsPane">📱 {{ 'ورود با پیامک' if lang == 'fa' else 'SMS code' }}</button>

@@ -1,0 +1,53 @@
+<!doctype html>
+{% set fa = lang == 'fa' %}
+<html lang="{{ lang }}" dir="{{ dir }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ tr('پلن‌های جهان‌ساز', 'World Builder plans') }} · {{ settings.site_name }}</title>
+  <meta name="theme-color" content="#05040b">
+  <link rel="icon" href="{% if settings.logo_version %}/static/uploads/logo.png?v={{ settings.logo_version }}{% else %}/static/img/favicon.svg{% endif %}">
+  <link rel="stylesheet" href="/static/world/world.css?v=20261026">
+  <style>body{background:radial-gradient(900px 520px at 10% -10%,rgba(122,0,240,.25),transparent 60%),radial-gradient(700px 420px at 95% 0,rgba(237,25,8,.1),transparent 60%),#05040b}</style>
+</head>
+<body class="page-pricing">
+<div class="pr-wrap">
+  <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px">
+    <a class="btn sm" href="/">← {{ tr('بازگشت به جهان‌ساز', 'Back to World Builder') }}</a>
+    <span class="sp"></span>
+    <a class="btn sm" href="/lang/{{ 'en' if fa else 'fa' }}?next=/pricing">🌐 {{ 'English' if fa else 'فارسی' }}</a>
+  </div>
+  <div class="pr-head">
+    <span class="chip">🌍 AI World Builder</span>
+    <h1>{{ tr('پلن مناسب دنیای خودت را انتخاب کن', 'Pick the plan for your world') }}</h1>
+    <p style="color:var(--muted);max-width:640px;margin:0 auto">{{ tr('هر ثبت‌نام ۷ روز دوره آزمایشی محدود دارد. هزینه‌های هوش مصنوعی جدا از پلن ماهانه، از سهمیه هر ۳ ساعت کسر می‌شود تا مصرف متعادل بماند.', 'Every sign-up gets a limited 7-day trial. Besides the monthly plan, every AI action uses your 3-hour allowance so usage stays balanced.') }}</p>
+  </div>
+  {% if error %}<div class="alert">{{ error }}</div>{% endif %}
+  {% if acc %}
+    <div class="alert ok" style="text-align:center">{{ tr('وضعیت فعلی', 'Current status') }}:
+      <b>{{ {'trial': tr('آزمایشی', 'Trial'), 'special': tr('ویژه', 'Special'), 'vip': 'VIP', 'expired': tr('منقضی', 'Expired')}.get(acc.tier, acc.tier) }}</b>
+      {% if acc.ends %} · {{ tr('تا', 'until') }} {{ acc.ends|jalali if fa else acc.ends|date }}{% endif %}</div>
+  {% endif %}
+  <div class="pr-grid">
+    {% for p in wplans %}
+    <div class="pr-card {{ p.tier }}">
+      <span class="tier {{ p.tier }}">{{ 'VIP' if p.tier == 'vip' else tr('ویژه', 'Special') }}</span>
+      <h2 style="margin-top:10px">{{ p.name_fa if fa else p.name_en }}</h2>
+      <div class="pr-price">{{ p.price_toman|money }} <small>{{ tr('تومان', 'Toman') }} / {{ p.days }} {{ tr('روز', 'days') }}</small></div>
+      <ul>{% for f in ((p.features_fa if fa else p.features_en) or '').splitlines() if f.strip() %}<li>{{ f }}</li>{% endfor %}</ul>
+      {% if user %}
+        <form method="post" action="/billing/checkout">
+          <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="plan_id" value="{{ p.id }}">
+          <button class="btn p" type="submit" style="width:100%;padding:12px" {{ 'disabled' if not billing_ready }}>{{ tr('فعال‌سازی', 'Activate') }} →</button>
+        </form>
+        {% if not billing_ready %}<p class="hint">{{ tr('درگاه پرداخت هنوز تنظیم نشده است.', 'The payment gateway is not configured yet.') }}</p>{% endif %}
+      {% else %}
+        <a class="btn p" href="/login?next=/pricing" style="width:100%;padding:12px">{{ tr('ورود برای خرید', 'Sign in to buy') }}</a>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  <p class="hint" style="text-align:center;margin-top:20px">🔒 {{ tr('پرداخت امن با درگاه آقای پرداخت · همان حساب و کیف پول بیلدباکس', 'Secure payment via AqayePardakht · the same BldBox account') }}</p>
+</div>
+</body>
+</html>
